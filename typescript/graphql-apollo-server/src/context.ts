@@ -1,11 +1,29 @@
+import express from 'express'
+import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-export interface Context {
-  prisma: PrismaClient
+export interface ExpressContext {
+  req: express.Request
+  res: express.Response
+  // connection?: ExecutionParams;
 }
 
-export function createContext(): Context {
-  return { prisma }
+export interface Context {
+  prisma: PrismaClient
+  req: express.Request
+  res: express.Response
 }
+
+export function setCookie(res: express.Response, token: string) {
+  res.cookie('token', `Bearer ${token}`, {
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24
+  })
+}
+
+export const createContext = ({ req, res }: ExpressContext) => ({
+  prisma, req, res
+})
+

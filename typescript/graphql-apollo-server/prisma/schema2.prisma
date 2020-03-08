@@ -1,0 +1,270 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Post {
+  id        Int     @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean @default(false)
+  author    User?
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String
+  name     String?
+  posts    Post[]
+}
+
+// model User {
+//   id        String   @id @default(cuid())
+//   createdAt DateTime @default(now())
+// }
+
+// // 屬性tag：新聞、分析、世界線、
+// model Tag {
+//   name       String   @id
+//   deprecated Boolean
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+// }
+
+// // model TagCommit {}
+// // model TagCommitDiff {}
+
+// model Post {
+//   id        Int      @id @default(autoincrement())
+//   user      User
+//   // 用tag？
+//   type      PostType
+//   header    String
+//   body      String
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+// model Comment {
+//   id   Int    @id @default(autoincrement())
+//   body String
+//   post Post?
+// }
+
+// model Feed {
+//   id       Int       @id @default(autoincrement())
+//   user     User
+//   post     Post?
+//   event    Event?
+//   tags     Tag[]
+//   tickers  Ticker[]
+//   comments Comment[]
+//   feedType FeedType
+//   url      String?
+//   title    String
+// }
+
+// model FeedVote {
+//   id     Int @id @default(autoincrement())
+//   choice Int
+// }
+
+// model FeedMatrics {
+//   id            Int @id @default(autoincrement())
+//   viewCount     Int
+//   voteUpCount   Int
+//   voteDwonCount Int
+// }
+
+// model FeedReport {
+//   id   Int  @id @default(autoincrement())
+//   feed Feed
+// }
+
+// // model FeedCommit {
+// //   id   Int  @id @default(autoincrement())
+// //   feed Feed
+// // }
+
+// model Notification {
+//   id Int @id @default(autoincrement())
+// }
+
+// model TrendingFeed {
+//   id        Int      @id @default(autoincrement())
+//   feed      Feed
+//   createdAt DateTime
+// }
+
+// model Poll {
+//   id        Int      @id @default(autoincrement())
+//   post Post?
+//   choices   String[]
+//   createdAt DateTime @default(now())
+//   closedAt  DateTime @default(now())
+// }
+
+// model Vote {
+//   id     Int  @id @default(autoincrement())
+//   poll   Poll
+//   user   User
+//   choice Int
+// }
+
+// model Event {
+//   id       Int      @id @default(autoincrement())
+//   feeds    Feed[]
+//   tags     Tag[]
+//   tickers  Ticker[]
+//   parent   Event    @relation(name: "parent")
+//   children Event[]  @relation(name: "children")
+//   // hot       Seq        @relation(name: "hot")
+//   // track     Seq        @relation(name: "track")
+//   polls    Poll[]
+//   // posts    Post[]
+//   // similarTo Event[] @relation(name: "similarTo")
+//   title    String
+//   // body     String
+// }
+
+// model EventCommit {
+//   id    Int    @id @default(autoincrement())
+//   user  User
+//   event Event
+//   diff  String
+// }
+
+// model EventMatrics {
+//   id Int    @id @default(autoincrement())
+//   event Event
+//   nFollows 
+// }
+
+// // 關聯的歷史evnets？
+// // model EventVec {
+// //   id    Int    @id @default(autoincrement())
+// //   event Event
+// //   vec   String
+// // }
+
+// // model TrackEventStat {}
+
+// // model Signal {}
+
+// model Ticker {
+//   id    Int   @id @default(autoincrement())
+//   name String
+// }
+
+// model TickerGroup {
+//   id    Int   @id @default(autoincrement())
+//   tickers Ticker[]
+// }
+
+// model Series {
+//   id     Int      @id @default(autoincrement())
+//   ticker Ticker @id
+//   value1  Float
+//   value2  Float
+//   datetime DateTime
+// }
+
+// model Bet {
+//   id Int @id @default(autoincrement())
+//   user User
+//   ticker Ticker
+//   direction Int
+//   value Float
+//   timespan Int
+//   hit String?
+//   createdAt DateTime
+// }
+
+// model TickerHub {
+//   id Int @id @default(autoincrement())
+//   ticker Ticker
+//   feeds Feed[]
+//   events Event[]
+// }
+
+// model TickerHubCommit {
+//   id Int @id @default(autoincrement())
+//   user User
+//   diff String
+// }
+
+// model EventFollow {
+//   id    Int   @id @default(autoincrement())
+//   user  User
+//   event Event
+// }
+
+// model TickerFollow {
+//   id     Int    @id @default(autoincrement())
+//   user   User
+//   ticker Ticker
+// }
+
+// // 需要approve的包括：tag, event
+// model Request {
+//   id     Int    @id @default(autoincrement())
+//   action Action
+// }
+
+// model Approval {
+//   id       Int     @id @default(autoincrement())
+//   request  Request
+//   user     User
+//   approved Boolean
+// }
+
+// // model Request {
+// //   id       Int       @id @default(autoincrement())
+// //   user     User
+// //   event    Event
+// //   approves Approve[]
+// //   verdict  Boolean
+// //   body     String
+// // }
+
+// // model Approve {
+// //   id      Int     @id @default(autoincrement())
+// //   user    User
+// //   request Request
+// //   // comment Comment
+// //   reason  String
+// // }
+
+// // model Notice {}
+
+// model Account {
+//   id   Int  @id @default(autoincrement())
+//   user User
+//   rank Int
+// }
+
+// enum Stand {
+//   PRO CON OTHER
+// }
+
+// // 可以用tag代表？
+// enum FeedType {
+//   NEWS ANALYSIS
+// }
+
+// enum TagType {
+//   EVENT LINK USER
+// }
+
+// enum Action {
+//   CREATE UPDATE DELETE
+// }
+
+// enum PostType {
+//   POST SCENARIO
+// }

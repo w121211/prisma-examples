@@ -1,0 +1,21 @@
+{
+    "eslint.validate": [
+        "javascript",
+        "typescript"
+    ],
+    "eslint.workingDirectories": [
+        {
+            "directory": "./src",
+            "changeProcessCWD": true
+        }
+    ],
+    "editor.formatOnSave": true,
+    "sqltools.connections": [
+        {
+            "database": "/Users/chi/Documents/GitHub/prisma-examples/typescript/script/prisma/dev.db",
+            "dialect": "SQLite",
+            "name": "prisma"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}
