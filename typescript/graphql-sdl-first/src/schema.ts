@@ -17,7 +17,6 @@ type Post {
   title: String!
 }
 
-
 type Query {
   feed: [Post!]!
   filterPosts(searchString: String): [Post!]!
@@ -54,7 +53,6 @@ input PostCreateWithoutAuthorInput {
   title: String!
 }
 `
-
 
 const resolvers = {
   Query: {

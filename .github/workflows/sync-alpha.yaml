@@ -1,0 +1,15 @@
+name: sync-alpha
+on:
+  push:
+    branches:
+      - prisma2
+jobs:
+  sync-alpha:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: sync alpha
+        run: sh .github/scripts/sync-alpha.sh
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
