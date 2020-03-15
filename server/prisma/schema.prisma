@@ -1,27 +1,131 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  // provider = "sqlite"
+  // url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = "postgresql://sqlpad:sqlpad@db/mydb?schema=public"
 }
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean @default(false)
-  author    User?
+enum CommitAction {
+  CREATE UPDATE DELETE MERGE
+}
+
+enum CommitReview {
+  PENDING AGREE DISAGREE DROP
+}
+
+enum State {
+  PUBLIC DELETED REPORTED
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
+  id       Int    @id @default(autoincrement())
+  email    String @unique
   password String
-  name     String?
-  posts    Post[]
+  // name     String?
+  // posts    Post[]
 }
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  user      User
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  state     State    @default(PUBLIC)
+}
+
+// 透過URL可以判斷是否為網路
+model Post {
+  id        Int      @id @default(autoincrement())
+  user      User
+  feed      Feed
+  url       String?
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  state     State    @default(PUBLIC)
+}
+
+model Feed {
+  id        Int       @id @default(autoincrement())
+  user      User
+  header    String
+  post      Post?
+  // webpage   Webpage?
+  // event    Event?
+  tags      Tag[]
+  commments Comment[]
+  // tickers  Ticker[]
+  // comments Comment[]
+  // feedType FeedType
+  stats     FeedStats
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model FeedStats {
+  id         Int      @id @default(autoincrement())
+  feed       Feed
+  nViews     Int
+  nVoteUps   Int
+  nVoteDowns Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model FeedVote {
+  id        Int      @id @default(autoincrement())
+  user      User
+  feed      Feed
+  choice    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id        String   @id
+  valid     Boolean
+  posts     Post[]
+  feeds     Feed[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// model TagCommit {
+//   id          Int          @id @default(autoincrement())
+//   user        User
+//   tag         Tag
+//   action      CommitAction
+//   diff        String
+//   description String
+//   comments    Comment[]
+//   createdAt   DateTime     @default(now())
+//   updatedAt   DateTime     @updatedAt
+// }
+
+// model TagCommitReview {
+//   id        Int          @id @default(autoincrement())
+//   user      User
+//   commit    TagCommit
+//   choice    CommitReview
+//   createdAt DateTime     @default(now())
+//   updatedAt DateTime     @updatedAt
+// }
+
+
+
+
+// model FeedReport {
+//   id   Int  @id @default(autoincrement())
+//   feed Feed
+// }
+
+
 
 // model User {
 //   id        String   @id @default(cuid())
@@ -56,41 +160,6 @@ model User {
 //   post Post?
 // }
 
-// model Feed {
-//   id       Int       @id @default(autoincrement())
-//   user     User
-//   post     Post?
-//   event    Event?
-//   tags     Tag[]
-//   tickers  Ticker[]
-//   comments Comment[]
-//   feedType FeedType
-//   url      String?
-//   title    String
-// }
-
-// model FeedVote {
-//   id     Int @id @default(autoincrement())
-//   choice Int
-// }
-
-// model FeedMatrics {
-//   id            Int @id @default(autoincrement())
-//   viewCount     Int
-//   voteUpCount   Int
-//   voteDwonCount Int
-// }
-
-// model FeedReport {
-//   id   Int  @id @default(autoincrement())
-//   feed Feed
-// }
-
-// // model FeedCommit {
-// //   id   Int  @id @default(autoincrement())
-// //   feed Feed
-// // }
-
 // model Notification {
 //   id Int @id @default(autoincrement())
 // }
@@ -117,19 +186,19 @@ model User {
 // }
 
 // model Event {
-//   id       Int      @id @default(autoincrement())
-//   feeds    Feed[]
-//   tags     Tag[]
-//   tickers  Ticker[]
-//   parent   Event    @relation(name: "parent")
-//   children Event[]  @relation(name: "children")
-//   // hot       Seq        @relation(name: "hot")
-//   // track     Seq        @relation(name: "track")
-//   polls    Poll[]
-//   // posts    Post[]
-//   // similarTo Event[] @relation(name: "similarTo")
-//   title    String
-//   // body     String
+// id       Int      @id @default(autoincrement())
+// feeds    Feed[]
+// tags     Tag[]
+// tickers  Ticker[]
+// parent   Event    @relation(name: "parent")
+// children Event[]  @relation(name: "children")
+// // hot       Seq        @relation(name: "hot")
+// // track     Seq        @relation(name: "track")
+// polls    Poll[]
+// // posts    Post[]
+// // similarTo Event[] @relation(name: "similarTo")
+// title    String
+// // body     String
 // }
 
 // model EventCommit {
@@ -167,11 +236,11 @@ model User {
 // }
 
 // model Series {
-//   id     Int      @id @default(autoincrement())
-//   ticker Ticker @id
-//   value1  Float
-//   value2  Float
-//   datetime DateTime
+// id     Int      @id @default(autoincrement())
+// ticker Ticker @id
+// value1  Float
+// value2  Float
+// datetime DateTime
 // }
 
 // model Bet {

@@ -8,8 +8,9 @@ import { APP_SECRET } from './permissions'
 const Query = queryType({
   definition(t) {
     t.crud.user()
-    t.crud.tag()
     t.crud.post()
+    t.crud.feed()
+    t.crud.feeds({ ordering: { createdAt: true } })
 
     t.field('me', {
       type: 'User',
@@ -24,14 +25,19 @@ const Query = queryType({
       },
     })
 
-    t.list.field('feed', {
-      type: 'Post',
-      resolve: (_, args, ctx) => {
-        return ctx.prisma.post.findMany({
-          where: { published: true },
-        })
-      },
-    })
+    // t.field('feeds', {
+    //   type: 'Feed',
+    //   resolve:( )
+    // })
+
+    // t.list.field('feed', {
+    //   type: 'Post',
+    //   resolve: (_, args, ctx) => {
+    //     return ctx.prisma.post.findMany({
+    //       where: { published: true },
+    //     })
+    //   },
+    // })
 
     t.list.field('filterPosts', {
       type: 'Post',
@@ -54,7 +60,7 @@ const Query = queryType({
 
 const Mutation = mutationType({
   definition(t) {
-    t.crud.createOneTag()
+    // t.crud.createOneTag()
 
     t.field('signup', {
       type: 'AuthPayload',
@@ -67,7 +73,6 @@ const Mutation = mutationType({
         const hashedPassword = await hash(password, 10)
         const user = await ctx.prisma.user.create({
           data: {
-            name,
             email,
             password: hashedPassword,
           },
@@ -116,7 +121,7 @@ const Mutation = mutationType({
       type: 'Post',
       args: {
         title: stringArg({ nullable: false }),
-        content: stringArg(),
+        content: stringArg({ nullable: false }),
         authorEmail: stringArg(),
       },
       resolve: (_, { title, content, authorEmail }, ctx) => {
@@ -142,18 +147,68 @@ const Mutation = mutationType({
       resolve: (_, { id }, ctx) => {
         return ctx.prisma.post.update({
           where: { id: Number(id) },
-          data: { published: true },
+          // data: { published: true },
         })
       },
     })
   },
 })
 
+const Feed = objectType({
+  name: 'Feed',
+  definition(t) {
+    t.model.id()
+    t.model.post()
+    t.model.title()
+    t.model.user()
+    // t.model.webpage()
+    // t.model.name()
+    // t.model.email()
+    // t.model.posts({
+    //   pagination: false,
+    // })
+  },
+})
+
+const ShortFeed =
+
+// const Feed = objectType({
+//   name: 'Feed',
+//   definition(t) {
+//     t.model.id()
+//     t.model.post()
+//     t.model.title()
+//     t.model.user()
+//     // t.model.webpage()
+//     t.model.post()
+//     // t.model.name()
+//     // t.model.email()
+//     // t.model.posts({
+//     //   pagination: false,
+//     // })
+//   },
+// })
+
+
+// const Webpage = objectType({
+//   name: 'Webpage',
+//   definition(t) {
+//     t.model.id()
+//     t.model.title()
+//     t.mode
+//     // t.model.name()
+//     // t.model.email()
+//     // t.model.posts({
+//     //   pagination: false,
+//     // })
+//   },
+// })
+
+
 const User = objectType({
   name: 'User',
   definition(t) {
     t.model.id()
-    t.model.name()
     t.model.email()
     t.model.posts({
       pagination: false,
@@ -169,17 +224,17 @@ const Post = objectType({
     t.model.content()
     t.model.published()
     t.model.author()
-    t.model.tags()
+    // t.model.tags()
   },
 })
 
-const Tag = objectType({
-  name: 'Tag',
-  definition(t) {
-    t.model.name()
-    t.model.posts()
-  },
-})
+// const Tag = objectType({
+//   name: 'Tag',
+//   definition(t) {
+//     t.model.name()
+//     t.model.posts()
+//   },
+// })
 
 const AuthPayload = objectType({
   name: 'AuthPayload',
@@ -191,7 +246,10 @@ const AuthPayload = objectType({
 
 
 export const schema = makeSchema({
-  types: [Query, Mutation, Post, User, AuthPayload, Tag],
+  types: [
+    Query, Mutation, Post, User, AuthPayload,
+    Feed,
+  ],
   plugins: [nexusPrismaPlugin()],
   outputs: {
     schema: __dirname + '/../schema.graphql',

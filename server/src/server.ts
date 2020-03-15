@@ -10,8 +10,6 @@ import { createContext } from './context'
 import { schema as baseSchema } from './schema'
 import { permissions, APP_SECRET } from './permissions'
 
-import { PrismaClient } from '@prisma/client'
-
 interface Token {
   userId: string
 }
@@ -28,7 +26,7 @@ declare module 'express-serve-static-core' {
 
 function authorization(): express.RequestHandler {
   return function (req, res, next) {
-    console.log(req.cookies)
+    // console.log(req.cookies)
     const { token } = req.cookies
     if (!token) {
       return next()
@@ -54,10 +52,10 @@ const app = express()
 app.use(cookieParser())
 app.use(authorization())
 
-const schema = applyMiddleware(baseSchema, permissions)
+// const schema = applyMiddleware(baseSchema, permissions)
 const server = new ApolloServer({
-  schema,
-  // schema: baseSchema,
+  // schema,
+  schema: baseSchema,
   context: createContext,
   // context: ({ req, res }) => ({
   //   request: req,
@@ -68,7 +66,8 @@ const server = new ApolloServer({
     settings: {
       "request.credentials": "include"  // for cookies
     }
-  }
+  },
+  mocks: true,
 })
 
 server.applyMiddleware({ app, path: '/' })
@@ -76,5 +75,4 @@ server.applyMiddleware({ app, path: '/' })
 
 // module.exports = { app };
 // export { app }
-
 app.listen(4000, () => console.log(`Listening on http://localhost:4000/`));
