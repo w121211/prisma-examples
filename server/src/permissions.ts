@@ -1,5 +1,6 @@
-import { allow, rule, shield } from 'graphql-shield'
+import express from 'express'
 import { verify } from 'jsonwebtoken'
+import { allow, rule, shield } from 'graphql-shield'
 import { Context } from './context'
 
 export const APP_SECRET = 'appsecret321'
@@ -33,13 +34,15 @@ function getUserId(context: Context) {
 const rules = {
   isAuthenticatedUser: rule({ cache: 'contextual' })((parent, args, context) => {
     return Boolean(context.req.userId)
-  })
+  }),
+
   // isAuthenticatedUser: rule()((parent, args, context) => {
   //   const userId = getUserId(context)
   //   // context.req["userId"] = userId
   //   context.req.userId = userId
   //   return Boolean(userId)
   // })
+
   // isPostOwner: rule()(async (parent, { id }, context) => {
   //   const userId = getUserId(context)
   //   const author = await context.prisma.post
@@ -51,6 +54,29 @@ const rules = {
   //     .author()
   //   return userId === author.id
   // }),
+}
+
+export function authorization(): express.RequestHandler {
+  return function (req, res, next) {
+    // console.log(req.cookies)
+    const { token } = req.cookies
+    if (!token) {
+      return next()
+    }
+
+    try {
+      const verifiedToken = verify(token.replace("Bearer ", ""), APP_SECRET) as Token
+      // const verifiedToken = verify(
+      //   token.replace('Bearer ', ''),
+      //   process.env.APP_SECRET || ""
+      // ) as Token
+      req.userId = verifiedToken && verifiedToken.userId
+    } catch (error) {
+      res.clearCookie('token')
+    }
+
+    return next();
+  };
 }
 
 // const isAuthenticated = rule({ cache: 'contextual' })((parent, args, context) => {

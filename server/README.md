@@ -1,3 +1,34 @@
+# Pages
+
+Feed（資訊流）：like/unlike、導流至event/ticker、link/post/signal、comments
+* 尋找投資機會
+* 感受市場
+
+Event（資訊彙整、深入分析）：關注度/熱度、tickers、tags、feeds、posts/polls（世界線/分析）、follow/unfollow、歷史events、
+* 確認投資機會 -> 尋找投資標的 -> 判斷投資策略、進場時機/價位
+* 一個事件可能有多個投資標的，因此需要有綜覽比較，ie透過ticker-group
+
+Ticker（標的資訊）：價格、所屬的ticker-groups＆排名、經營/公司資訊、歷史價格&factor、群眾/機器預測、訊號
+* 判斷進場時機/價位
+* 預測走勢
+
+Ticker-group：tickers的比較、
+
+Tag（資訊彙整）：events, feeds
+* 類似wiki功能
+* hash-tag: 熱度、
+* ticker
+* event-trend：熱度
+
+ticker可以包在tag裡嗎？
+對於ticker：price, 相關的ticker,
+
+Post
+* 深入分析
+
+Poll
+* 多元觀點
+
 # GraphQL Apollo Server Example
 
 This example shows how to implement a **GraphQL server with TypeScript** based on  [Prisma Client](https://github.com/prisma/prisma2/blob/master/docs/prisma-client-js/api.md), [apollo-server](https://www.apollographql.com/docs/apollo-server/) and [GraphQL Nexus](https://nexus.js.org/). It is based on a SQLite database, you can find the database file with some dummy data at [`./prisma/dev.db`](./prisma/dev.db).

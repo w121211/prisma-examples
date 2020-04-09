@@ -14,10 +14,11 @@ services:
       dockerfile: .devcontainer/Dockerfile
 
     volumes:
-      - ..:/workspace:cached
+      - ../..:/workspace:cached
     ports:
       # - 8888:8888
       - 4000:4000
+      - 3010:3010
       
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
@@ -26,7 +27,7 @@ services:
     #   - db
     
   db:
-    image: postgres
+    image: postgres:latest
     restart: unless-stopped
     environment:
       POSTGRES_USER: sqlpad

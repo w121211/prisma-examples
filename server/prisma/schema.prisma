@@ -1,6 +1,4 @@
 datasource db {
-  // provider = "sqlite"
-  // url      = "file:./dev.db"
   provider = "postgresql"
   url      = "postgresql://sqlpad:sqlpad@db/mydb?schema=public"
 }
@@ -9,331 +7,249 @@ generator client {
   provider = "prisma-client-js"
 }
 
-enum CommitAction {
-  CREATE UPDATE DELETE MERGE
-}
-
-enum CommitReview {
-  PENDING AGREE DISAGREE DROP
-}
-
-enum State {
-  PUBLIC DELETED REPORTED
-}
-
 model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-  // name     String?
-  // posts    Post[]
+  id            String         @default(cuid()) @id
+  email         String         @unique
+  password      String
+  feeds         Feed[]
+  comments      Comment[]
+  posts         Post[]
+  polls         Poll[]
+  pollVotes     PollVote[]
+  eventFollows  EventFollow[]
+  tickerFollows TickerFollow[]
+  commits       Commit[]
+  commitReviews CommitReview[]
+  likes         Like[]
+  profile       Profile
+  dailyProfile  DailyProfile
 }
 
-model Comment {
-  id        Int      @id @default(autoincrement())
-  user      User
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  state     State    @default(PUBLIC)
+model Profile {
+  id        Int  @default(autoincrement()) @id
+  user      User @relation(references: [id])
+  level     Int  @default(0)
+  exp       Int  @default(0)
+  nGotLikes Int  @default(0)
+  nCommits  Int  @default(0)
 }
 
-// 透過URL可以判斷是否為網路
-model Post {
-  id        Int      @id @default(autoincrement())
-  user      User
-  feed      Feed
-  url       String?
-  title     String
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  state     State    @default(PUBLIC)
+model DailyProfile {
+  id             Int      @default(autoincrement()) @id
+  user           User     @relation(references: [id])
+  nLikes         Int      @default(0)
+  // nFeeds         Int      @default(0)
+  nEventFollows  Int      @default(0)
+  nTickerFollows Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Feed {
-  id        Int       @id @default(autoincrement())
-  user      User
+  id        Int       @default(autoincrement()) @id
+  user      User      @relation(references: [id])
   header    String
-  post      Post?
+  post      Post?     @relation(references: [id])
   // webpage   Webpage?
   // event    Event?
-  tags      Tag[]
+  tags      Tag[]     @relation(references: [id])
   commments Comment[]
   // tickers  Ticker[]
   // comments Comment[]
   // feedType FeedType
-  stats     FeedStats
+  stats     FeedStats @relation(references: [id])
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  ticker    Ticker?   @relation(references: [id])
+  likes     Like[]
 }
 
-model FeedStats {
-  id         Int      @id @default(autoincrement())
-  feed       Feed
-  nViews     Int
-  nVoteUps   Int
-  nVoteDowns Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model FeedVote {
-  id        Int      @id @default(autoincrement())
-  user      User
+// 透過URL可以判斷是否為link
+model Post {
+  id        Int      @default(autoincrement()) @id
+  user      User     @relation(references: [id])
   feed      Feed
+  url       String?
+  header    String
+  body      String
+  state     State    @default(PUBLIC)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  polls     Poll[]
+  event     Event?   @relation(references: [id])
+  ticker    Ticker?  @relation(references: [id])
+  tag       Tag?     @relation(references: [id])
+  likes     Like[]
+}
+
+model Comment {
+  id        Int      @default(autoincrement()) @id
+  user      User     @relation(references: [id])
+  body      String
+  state     State    @default(PUBLIC)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  feed      Feed?    @relation(references: [id])
+  commit    Commit?  @relation(references: [id])
+  likes     Like[]
+}
+
+model Poll {
+  id        Int        @default(autoincrement()) @id
+  user      User       @relation(references: [id])
+  post      Post?      @relation(references: [id])
+  header    String
+  body      String?
+  choices   String[]
+  state     State      @default(PUBLIC)
+  createdAt DateTime   @default(now())
+  closedAt  DateTime   @default(now())
+  pollVotes PollVote[]
+  event     Event?     @relation(references: [id])
+  likes     Like[]
+}
+
+model PollVote {
+  id        Int      @default(autoincrement()) @id
+  // post   Post
+  user      User     @relation(references: [id])
+  poll      Poll     @relation(references: [id])
   choice    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+model Event {
+  id           Int           @default(autoincrement()) @id
+  header       String
+  tags         Tag[]
+  // 包含event-trend(用ticker表示)
+  tickers      Ticker[]      @relation(references: [id])
+  parent       Event?        @relation("parent", references: [id])
+  children     Event[]       @relation("children")
+  posts        Post[]
+  polls        Poll[]
+  // similarTo [Event!]!
+  createdAt    DateTime
+  updatedAt    DateTime
+  events       Event[]       @relation("parent")
+  event        Event?        @relation("children", references: [id])
+  eventFollows EventFollow[]
+  commits      Commit[]
+}
+
+model Ticker {
+  id            Int            @default(autoincrement()) @id
+  name          String         @unique
+  body          String
+  valid         Boolean
+  feeds         Feed[]
+  posts         Post[]
+  events        Event[]        @relation(references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  tickerFollows TickerFollow[]
+  commits       Commit[]
+  ticks         Tick[]
+}
+
+// 包含題材股
+// 包含ticker？ -> 基本面、同類股族群、連結金融商品（選擇權等） -> 可用body表示？
+// 屬性tag：新聞、分析、世界線、
 model Tag {
-  id        String   @id
+  id        Int      @default(autoincrement()) @id
+  name      String   @unique
+  body      String
   valid     Boolean
   posts     Post[]
-  feeds     Feed[]
+  feeds     Feed[]   @relation(references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  event     Event?   @relation(references: [id])
+  commits   Commit[]
+}
+
+model EventFollow {
+  id         Int      @default(autoincrement()) @id
+  user       User     @relation(references: [id])
+  event      Event    @relation(references: [id])
+  isFollowed Boolean
+  createdAt  DateTime
+  updatedAt  DateTime
+}
+
+model TickerFollow {
+  id         Int      @default(autoincrement()) @id
+  user       User     @relation(references: [id])
+  ticker     Ticker   @relation(references: [id])
+  isFollowed Boolean
+  createdAt  DateTime
+  updatedAt  DateTime
+}
+
+model Commit {
+  id            Int            @default(autoincrement()) @id
+  user          User           @relation(references: [id])
+  event         Event?         @relation(references: [id])
+  ticker        Ticker?        @relation(references: [id])
+  tag           Tag?           @relation(references: [id])
+  action        CommitAction
+  description   String
+  diff          String
+  comments      Comment[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  commitReviews CommitReview[]
+}
+
+model CommitReview {
+  id        Int      @default(autoincrement()) @id
+  user      User     @relation(references: [id])
+  commit    Commit   @relation(references: [id])
+  choice    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// model TagCommit {
-//   id          Int          @id @default(autoincrement())
-//   user        User
-//   tag         Tag
-//   action      CommitAction
-//   diff        String
-//   description String
-//   comments    Comment[]
-//   createdAt   DateTime     @default(now())
-//   updatedAt   DateTime     @updatedAt
-// }
+model Tick {
+  id     Int      @default(autoincrement()) @id
+  ticker Ticker   @relation(references: [id])
+  value  Float
+  at     DateTime
+}
 
-// model TagCommitReview {
-//   id        Int          @id @default(autoincrement())
-//   user      User
-//   commit    TagCommit
-//   choice    CommitReview
-//   createdAt DateTime     @default(now())
-//   updatedAt DateTime     @updatedAt
-// }
+model Like {
+  id        Int      @default(autoincrement()) @id
+  user      User     @relation(references: [id])
+  feed      Feed?    @relation(references: [id])
+  post      Post?    @relation(references: [id])
+  poll      Poll?    @relation(references: [id])
+  comment   Comment? @relation(references: [id])
+  choice    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
+model FeedStats {
+  id         Int      @default(autoincrement()) @id
+  feed       Feed
+  nViews     Int      @default(0)
+  nVoteUps   Int      @default(0)
+  nVoteDowns Int      @default(0)
+  nComments  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
 
+enum CommitAction {
+  CREATE
+  UPDATE
+  DELETE
+  MERGE
+}
 
-
-// model FeedReport {
-//   id   Int  @id @default(autoincrement())
-//   feed Feed
-// }
-
-
-
-// model User {
-//   id        String   @id @default(cuid())
-//   createdAt DateTime @default(now())
-// }
-
-// // 屬性tag：新聞、分析、世界線、
-// model Tag {
-//   name       String   @id
-//   deprecated Boolean
-//   createdAt  DateTime @default(now())
-//   updatedAt  DateTime @updatedAt
-// }
-
-// // model TagCommit {}
-// // model TagCommitDiff {}
-
-// model Post {
-//   id        Int      @id @default(autoincrement())
-//   user      User
-//   // 用tag？
-//   type      PostType
-//   header    String
-//   body      String
-//   createdAt DateTime @default(now())
-//   updatedAt DateTime @updatedAt
-// }
-
-// model Comment {
-//   id   Int    @id @default(autoincrement())
-//   body String
-//   post Post?
-// }
-
-// model Notification {
-//   id Int @id @default(autoincrement())
-// }
-
-// model TrendingFeed {
-//   id        Int      @id @default(autoincrement())
-//   feed      Feed
-//   createdAt DateTime
-// }
-
-// model Poll {
-//   id        Int      @id @default(autoincrement())
-//   post Post?
-//   choices   String[]
-//   createdAt DateTime @default(now())
-//   closedAt  DateTime @default(now())
-// }
-
-// model Vote {
-//   id     Int  @id @default(autoincrement())
-//   poll   Poll
-//   user   User
-//   choice Int
-// }
-
-// model Event {
-// id       Int      @id @default(autoincrement())
-// feeds    Feed[]
-// tags     Tag[]
-// tickers  Ticker[]
-// parent   Event    @relation(name: "parent")
-// children Event[]  @relation(name: "children")
-// // hot       Seq        @relation(name: "hot")
-// // track     Seq        @relation(name: "track")
-// polls    Poll[]
-// // posts    Post[]
-// // similarTo Event[] @relation(name: "similarTo")
-// title    String
-// // body     String
-// }
-
-// model EventCommit {
-//   id    Int    @id @default(autoincrement())
-//   user  User
-//   event Event
-//   diff  String
-// }
-
-// model EventMatrics {
-//   id Int    @id @default(autoincrement())
-//   event Event
-//   nFollows 
-// }
-
-// // 關聯的歷史evnets？
-// // model EventVec {
-// //   id    Int    @id @default(autoincrement())
-// //   event Event
-// //   vec   String
-// // }
-
-// // model TrackEventStat {}
-
-// // model Signal {}
-
-// model Ticker {
-//   id    Int   @id @default(autoincrement())
-//   name String
-// }
-
-// model TickerGroup {
-//   id    Int   @id @default(autoincrement())
-//   tickers Ticker[]
-// }
-
-// model Series {
-// id     Int      @id @default(autoincrement())
-// ticker Ticker @id
-// value1  Float
-// value2  Float
-// datetime DateTime
-// }
-
-// model Bet {
-//   id Int @id @default(autoincrement())
-//   user User
-//   ticker Ticker
-//   direction Int
-//   value Float
-//   timespan Int
-//   hit String?
-//   createdAt DateTime
-// }
-
-// model TickerHub {
-//   id Int @id @default(autoincrement())
-//   ticker Ticker
-//   feeds Feed[]
-//   events Event[]
-// }
-
-// model TickerHubCommit {
-//   id Int @id @default(autoincrement())
-//   user User
-//   diff String
-// }
-
-// model EventFollow {
-//   id    Int   @id @default(autoincrement())
-//   user  User
-//   event Event
-// }
-
-// model TickerFollow {
-//   id     Int    @id @default(autoincrement())
-//   user   User
-//   ticker Ticker
-// }
-
-// // 需要approve的包括：tag, event
-// model Request {
-//   id     Int    @id @default(autoincrement())
-//   action Action
-// }
-
-// model Approval {
-//   id       Int     @id @default(autoincrement())
-//   request  Request
-//   user     User
-//   approved Boolean
-// }
-
-// // model Request {
-// //   id       Int       @id @default(autoincrement())
-// //   user     User
-// //   event    Event
-// //   approves Approve[]
-// //   verdict  Boolean
-// //   body     String
-// // }
-
-// // model Approve {
-// //   id      Int     @id @default(autoincrement())
-// //   user    User
-// //   request Request
-// //   // comment Comment
-// //   reason  String
-// // }
-
-// // model Notice {}
-
-// model Account {
-//   id   Int  @id @default(autoincrement())
-//   user User
-//   rank Int
-// }
-
-// enum Stand {
-//   PRO CON OTHER
-// }
-
-// // 可以用tag代表？
-// enum FeedType {
-//   NEWS ANALYSIS
-// }
-
-// enum TagType {
-//   EVENT LINK USER
-// }
-
-// enum Action {
-//   CREATE UPDATE DELETE
-// }
-
-// enum PostType {
-//   POST SCENARIO
-// }
+enum State {
+  PUBLIC
+  DELETED
+  REPORTED
+}

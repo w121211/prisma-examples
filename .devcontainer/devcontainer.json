@@ -3,7 +3,7 @@
 	// "dockerFile": "Dockerfile",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
-	"workspaceFolder": "/workspace",
+	"workspaceFolder": "/workspace/prisma-examples",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"terminal.integrated.shell.linux": "/bin/bash"
@@ -14,7 +14,7 @@
 		"visualstudioexptteam.vscodeintellicode",
 		"apollographql.vscode-apollo",
 		"prisma.prisma"
-	],
+	]
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [
 	// 	4000
