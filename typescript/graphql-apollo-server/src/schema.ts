@@ -1,7 +1,7 @@
 import { compare, hash } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
 import { nexusPrismaPlugin } from 'nexus-prisma'
-import { idArg, makeSchema, mutationType, objectType, queryType, stringArg } from 'nexus'
+import { intArg, makeSchema, objectType, stringArg } from 'nexus'
 
 import { APP_SECRET } from './permissions'
 
@@ -137,7 +137,7 @@ const Mutation = mutationType({
       type: 'Post',
       nullable: true,
       args: {
-        id: idArg(),
+        id: intArg(),
       },
       resolve: (_, { id }, ctx) => {
         return ctx.prisma.post.update({

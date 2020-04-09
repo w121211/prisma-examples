@@ -5,7 +5,7 @@
     "automerge": false
   },
   "masterIssue": true,
-  "baseBranches": ["master", "prisma2"],
+  "baseBranches": ["master"],
   "packageRules": [
     {
       "baseBranchList": ["master"],
@@ -14,7 +14,7 @@
     }
   ],
   "ignoreDeps": [
-    "prisma2",
+    "@prisma/cli",
     "@prisma/client"
   ]
 }

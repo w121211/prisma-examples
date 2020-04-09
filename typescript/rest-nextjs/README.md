@@ -55,17 +55,17 @@ The app is now running, navigate to [`http://localhost:3000/`](http://localhost:
 
 </details>
 
-### 3. Using the REST API
+## Using the REST API
 
 You can also access the REST API of the API server directly. It is running on the same host machine and port and can be accessed via the `/api` route (in this case that is `localhost:3000/api/`, so you can e.g. reach the API with [`localhost:3000/api/feed`](http://localhost:3000/api/feed)).
 
-#### `GET`
+### `GET`
 
 - `/api/post/:id`: Fetch a single post by its `id`
 - `/api/feed`: Fetch all _published_ posts
 - `/api/filterPosts?searchString={searchString}`: Filter posts by `title` or `content`
 
-#### `POST`
+### `POST`
 
 - `/api/post`: Create a new post
   - Body:
@@ -77,22 +77,21 @@ You can also access the REST API of the API server directly. It is running on th
     - `email: String` (required): The email address of the user
     - `name: String` (optional): The name of the user
 
-#### `PUT`
+### `PUT`
 
 - `/api/publish/:id`: Publish a post by its `id`
 
-#### `DELETE`
+### `DELETE`
   
 - `/api/post/:id`: Delete a post by its `id`
-
 
 ## Evolving the app
 
 Evolving the application typically requires five subsequent steps:
 
 1. Migrating the database schema using SQL
-1. Updating your Prisma schema by introspecting the database with `prisma2 introspect`
-1. Generating Prisma Client to match the new database schema with `prisma2 generate`
+1. Updating your Prisma schema by introspecting the database with `prisma introspect`
+1. Generating Prisma Client to match the new database schema with `prisma generate`
 1. Using the updated Prisma Client in your application code and extending the REST API
 1. Building new UI features in React
 
@@ -104,7 +103,7 @@ The first step would be to add a new table, e.g. called `Profile`, to the databa
 
 ```sql
 CREATE TABLE "Profile" (
-  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "bio" TEXT,
   "user" TEXT NOT NULL UNIQUE REFERENCES "User"(id) ON DELETE SET NULL
 );
@@ -115,7 +114,7 @@ To run the SQL statement against the database, you can use the `sqlite3` CLI in 
 ```bash
 sqlite3 dev.db \
 'CREATE TABLE "Profile" (
-  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "bio" TEXT,
   "user" TEXT NOT NULL UNIQUE REFERENCES "User"(id) ON DELETE SET NULL
 );'
@@ -130,10 +129,10 @@ While your database now is already aware of the new table, you're not yet able t
 The Prisma schema is the foundation for the generated Prisma Client API. Therefore, you first need to make sure the new `Profile` table is represented in it as well. The easiest way to do so is by introspecting your database:
 
 ```
-npx prisma2 introspect
+npx prisma introspect
 ```
 
-> **Note**: You're using [npx](https://github.com/npm/npx) to run Prisma 2 CLI that's listed as a development dependency in [`package.json`](./package.json). Alternatively, you can install the CLI globally using `npm install -g prisma2`. When using Yarn, you can run: `yarn prisma2 dev`.
+> **Note**: You're using [npx](https://github.com/npm/npx) to run Prisma 2 CLI that's listed as a development dependency in [`package.json`](./package.json). Alternatively, you can install the CLI globally using `npm install -g @prisma/cli`. When using Yarn, you can run: `yarn prisma dev`.
 
 The `introspect` command updates your `schema.prisma` file. It now includes the `Profile` model and its 1:1 relation to `User`:
 
@@ -166,7 +165,7 @@ model Profile {
 With the updated Prisma schema, you can now also update the Prisma Client API with the following command:
 
 ```
-npx prisma2 generate
+npx prisma generate
 ```
 
 This command updated the Prisma Client API in `node_modules/@prisma/client`.
@@ -182,10 +181,10 @@ Here are some examples for some Prisma Client operations:
 ```ts
 const profile = await prisma.profile.create({
   data: {
-    bio: "Hello World",
+    bio: 'Hello World',
     user: {
-      connect: { email: "alice@prisma.io" }
-    }
+      connect: { email: 'alice@prisma.io' },
+    },
   },
 })
 ```
@@ -198,10 +197,10 @@ const user = await prisma.user.create({
     email: 'john@prisma.io',
     name: 'John',
     profile: {
-      create: { 
-        bio: "Hello World"
-      }
-    }
+      create: {
+        bio: 'Hello World',
+      },
+    },
   },
 })
 ```
@@ -210,20 +209,20 @@ const user = await prisma.user.create({
 
 ```ts
 const userWithUpdatedProfile = await prisma.user.update({
-  where: { email: "alice@prisma.io" },
+  where: { email: 'alice@prisma.io' },
   data: {
     profile: {
       update: {
-        bio: "Hello Friends"
-      }
-    }
-  }
+        bio: 'Hello Friends',
+      },
+    },
+  },
 })
 ```
 
 ### 5. Build new UI features in React
 
-Once you have added a new endpoint to the API (e.g. `/api/profile` with `/POST`, `/PUT` and `GET` operations), you can start building a new UI component in React. It could e.g. be called `profile.tsx` and would be located in the `pages` directory. 
+Once you have added a new endpoint to the API (e.g. `/api/profile` with `/POST`, `/PUT` and `GET` operations), you can start building a new UI component in React. It could e.g. be called `profile.tsx` and would be located in the `pages` directory.
 
 In the application code, you can access the new endpoint via `fetch` operations and populate the UI with the data you receive from the API calls.
 
@@ -231,6 +230,6 @@ In the application code, you can access the new endpoint via `fetch` operations 
 
 - Read the holistic, step-by-step [Prisma Framework tutorial](https://github.com/prisma/prisma2/blob/master/docs/tutorial.md)
 - Check out the [Prisma Framework docs](https://github.com/prisma/prisma2) (e.g. for [data modeling](https://github.com/prisma/prisma2/blob/master/docs/data-modeling.md), [relations](https://github.com/prisma/prisma2/blob/master/docs/relations.md) or the [Prisma Client API](https://github.com/prisma/prisma2/tree/master/docs/prisma-client-js/api.md))
-- Share your feedback in the [`prisma2-preview`](https://prisma.slack.com/messages/CKQTGR6T0/) channel on the Prisma Slack
+- Share your feedback in the [`prisma2-preview`](https://prisma.slack.com/messages/CKQTGR6T0/) channel on the [Prisma Slack](https://slack.prisma.io/)
 - Create issues and ask questions on [GitHub](https://github.com/prisma/prisma2/)
 - Track Prisma 2's progress on [`isprisma2ready.com`](https://isprisma2ready.com)

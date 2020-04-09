@@ -39,14 +39,13 @@ In case you prefer a GUI client, we recommend [BloomRPC](https://github.com/uw-l
 
 ![](https://imgur.com/0EiIo03.png)
 
-
 ## Evolving the app
 
 Evolving the application typically requires four subsequent steps:
 
 1. Migrating the database schema using SQL
-1. Update your Prisma schema by introspecting the database with `prisma2 introspect`
-1. Generating Prisma Client to match the new database schema with `prisma2 generate`
+1. Update your Prisma schema by introspecting the database with `prisma introspect`
+1. Generating Prisma Client to match the new database schema with `prisma generate`
 1. Use the updated Prisma Client in your application code
 
 For the following example scenario, assume you want to add a "profile" feature to the app where users can create a profile and write a short bio about themselves.
@@ -57,7 +56,7 @@ The first step would be to add a new table, e.g. called `Profile`, to the databa
 
 ```sql
 CREATE TABLE "Profile" (
-  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "bio" TEXT,
   "user" TEXT NOT NULL UNIQUE REFERENCES "User"(id) ON DELETE SET NULL
 );
@@ -68,7 +67,7 @@ To run the SQL statement against the database, you can use the `sqlite3` CLI in 
 ```bash
 sqlite3 dev.db \
 'CREATE TABLE "Profile" (
-  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   "bio" TEXT,
   "user" TEXT NOT NULL UNIQUE REFERENCES "User"(id) ON DELETE SET NULL
 );'
@@ -83,10 +82,10 @@ While your database now is already aware of the new table, you're not yet able t
 The Prisma schema is the foundation for the generated Prisma Client API. Therefore, you first need to make sure the new `Profile` table is represented in it as well. The easiest way to do so is by introspecting your database:
 
 ```
-npx prisma2 introspect
+npx prisma introspect
 ```
 
-> **Note**: You're using [npx](https://github.com/npm/npx) to run Prisma 2 CLI that's listed as a development dependency in [`package.json`](./package.json). Alternatively, you can install the CLI globally using `npm install -g prisma2`. When using Yarn, you can run: `yarn prisma2 dev`.
+> **Note**: You're using [npx](https://github.com/npm/npx) to run Prisma 2 CLI that's listed as a development dependency in [`package.json`](./package.json). Alternatively, you can install the CLI globally using `npm install -g @prisma/cli`. When using Yarn, you can run: `yarn prisma dev`.
 
 The `introspect` command updates your `schema.prisma` file. It now includes the `Profile` model and its 1:1 relation to `User`:
 
@@ -119,7 +118,7 @@ model Profile {
 With the updated Prisma schema, you can now also update the Prisma Client API with the following command:
 
 ```
-npx prisma2 generate
+npx prisma generate
 ```
 
 This command updated the Prisma Client API in `node_modules/@prisma/client`.
@@ -133,10 +132,10 @@ You can now use your `PrismaClient` instance to perform operations against the n
 ```ts
 const profile = await prisma.profile.create({
   data: {
-    bio: "Hello World",
+    bio: 'Hello World',
     user: {
-      connect: { email: "alice@prisma.io" }
-    }
+      connect: { email: 'alice@prisma.io' },
+    },
   },
 })
 ```
@@ -149,10 +148,10 @@ const user = await prisma.user.create({
     email: 'john@prisma.io',
     name: 'John',
     profile: {
-      create: { 
-        bio: "Hello World"
-      }
-    }
+      create: {
+        bio: 'Hello World',
+      },
+    },
   },
 })
 ```
@@ -161,14 +160,14 @@ const user = await prisma.user.create({
 
 ```ts
 const userWithUpdatedProfile = await prisma.user.update({
-  where: { email: "alice@prisma.io" },
+  where: { email: 'alice@prisma.io' },
   data: {
     profile: {
       update: {
-        bio: "Hello Friends"
-      }
-    }
-  }
+        bio: 'Hello Friends',
+      },
+    },
+  },
 })
 ```
 
@@ -176,6 +175,6 @@ const userWithUpdatedProfile = await prisma.user.update({
 
 - Read the holistic, step-by-step [Prisma Framework tutorial](https://github.com/prisma/prisma2/blob/master/docs/tutorial.md)
 - Check out the [Prisma Framework docs](https://github.com/prisma/prisma2) (e.g. for [data modeling](https://github.com/prisma/prisma2/blob/master/docs/data-modeling.md), [relations](https://github.com/prisma/prisma2/blob/master/docs/relations.md) or the [Prisma Client API](https://github.com/prisma/prisma2/tree/master/docs/prisma-client-js/api.md))
-- Share your feedback in the [`prisma2-preview`](https://prisma.slack.com/messages/CKQTGR6T0/) channel on the Prisma Slack
+- Share your feedback in the [`prisma2-preview`](https://prisma.slack.com/messages/CKQTGR6T0/) channel on the [Prisma Slack](https://slack.prisma.io/)
 - Create issues and ask questions on [GitHub](https://github.com/prisma/prisma2/)
 - Track Prisma 2's progress on [`isprisma2ready.com`](https://isprisma2ready.com)

@@ -7,6 +7,12 @@ dir="$(pwd)"
 packages=$(find "." -not -path "*/node_modules/*" -type f -name "package.json")
 
 echo "$packages" | tr ' ' '\n' | while read -r item; do
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
+	echo ""
 	echo "---------------------"
 	echo "running $item"
 
@@ -21,9 +27,11 @@ echo "$packages" | tr ' ' '\n' | while read -r item; do
 
 	## ACTION
 	yarn install
-	yarn prisma2 generate
+	yarn prisma generate
 
-	run_file="$dir/.github/tests/$(dirname $item)/run.sh"
+	echo "+++++++++++"
+	echo "executing .github/tests/$(dirname "$item")/run.sh (tests)"
+	run_file="$dir/.github/tests/$(dirname "$item")/run.sh"
 
 	if [ -f "$run_file" ]; then
 		set +e
@@ -34,14 +42,23 @@ echo "$packages" | tr ' ' '\n' | while read -r item; do
 		cd "$dir"
 
 		if [ $code -ne 0 ]; then
-			echo "$(dirname $item) failed"
+			echo "$(dirname "$item") failed"
 
-			if [ "$GITHUB_REF" = "refs/heads/prisma2" ]; then
-				export webhook="$SLACK_WEBHOOK_URL_FAILING"
-				version="$(cat .github/prisma-version.txt)"
-				sha="$(git rev-parse HEAD | cut -c -7)"
+			if [ "$GITHUB_REF" = "refs/heads/master" ]; then
 				(cd .github/slack/ && yarn install --silent)
-				node .github/slack/notify.js "\`$sha\`: $(dirname $item) failed using prisma@$version"
+
+				export webhook="$SLACK_WEBHOOK_URL_FAILING"
+
+				version="$(cat .github/prisma-version.txt)"
+				branch="$(git rev-parse --abbrev-ref HEAD)"
+				sha="$(git rev-parse HEAD)"
+				short_sha="$(echo "$sha" | cut -c -7)"
+				message="$(git log -1 --pretty=%B)"
+
+				commit_link="\`<https://github.com/prisma/prisma-examples/commit/$sha|$branch@$short_sha>\`"
+				workflow_link="<https://github.com/prisma/prisma-examples/actions/runs/$GITHUB_RUN_ID|$message>"
+
+				node .github/slack/notify.js "prisma@$version: $(dirname "$item") :x: $workflow_link (via $commit_link)"
 			fi
 
 			exit $code

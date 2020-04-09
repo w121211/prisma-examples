@@ -4,10 +4,10 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@prisma/photon": "^2.0.0-preview017",
+    "@prisma/client": "2.0.0-beta.1",
     "graphql": "^14.5.8",
     "graphql-yoga": "^1.16.1",
-    "nexus": "0.12.0-rc.13",
+    "nexus": "0.12.0",
     "nexus-prisma": "^0.11.0"
   },
   "scripts": {
@@ -15,7 +15,7 @@
     "seed": "node prisma/seed"
   },
   "devDependencies": {
-    "prisma2": "2.0.0-preview022"
+    "@prisma/cli": "2.0.0-beta.1"
   },
   "prettier": {
     "singleQuote": true,
