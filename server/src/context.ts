@@ -1,8 +1,8 @@
 import express from 'express'
-import { ApolloServerExpressConfig } from 'apollo-server-express'
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ errorFormat: "colorless" })
+// const prisma = new PrismaClient()
 
 export interface ExpressContext {
   req: express.Request

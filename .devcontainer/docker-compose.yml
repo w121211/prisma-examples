@@ -23,30 +23,36 @@ services:
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
     
-    # links: 
-    #   - db
-    
   db:
     image: postgres:latest
     restart: unless-stopped
     environment:
-      POSTGRES_USER: sqlpad
-      POSTGRES_PASSWORD: sqlpad
+      POSTGRES_PASSWORD: postgrespassword
   
+  # sqlpad:
+  #   image: sqlpad/sqlpad:latest
+  #   hostname: sqlpad
+  #   ports:
+  #     - 3000:3000
+  #   environment:
+  #     - SQLPAD_DEBUG=TRUE
+  #   volumes:
+  #     # This maps /var/lib/sqlpad directory inside sqlpad container to a directory docker host (your laptop, desktop, etc)
+  #     # This allows your SQLPad data to exist across container shutdowns
+  #     # For this to work, the path here `~/docker-volumes` must be shared with docker
+  #     - ~/docker-volumes/sqlpad-postgres:/var/lib/sqlpad
   
-  sqlpad:
-    image: sqlpad/sqlpad:latest
-    hostname: sqlpad
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    depends_on:
+    - db
     ports:
-      - 3000:3000
+    - 5050:80
     environment:
-      - SQLPAD_DEBUG=TRUE
-    volumes:
-      # This maps /var/lib/sqlpad directory inside sqlpad container to a directory docker host (your laptop, desktop, etc)
-      # This allows your SQLPad data to exist across container shutdowns
-      # For this to work, the path here `~/docker-volumes` must be shared with docker
-      - ~/docker-volumes/sqlpad-postgres:/var/lib/sqlpad
-    
+      PGADMIN_DEFAULT_EMAIL: pgadmin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+
   # db:
   #   image: postgres
   #   restart: unless-stopped

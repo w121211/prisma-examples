@@ -1,6 +1,6 @@
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://sqlpad:sqlpad@db/mydb?schema=public"
+  url      = "postgresql://postgres:postgrespassword@db/prisma?schema=public"
 }
 
 generator client {
@@ -20,84 +20,98 @@ model User {
   tickerFollows TickerFollow[]
   commits       Commit[]
   commitReviews CommitReview[]
-  likes         Like[]
   profile       Profile
   dailyProfile  DailyProfile
+  feedLikes     FeedLike[]
 }
 
 model Profile {
-  id        Int  @default(autoincrement()) @id
-  user      User @relation(references: [id])
-  level     Int  @default(0)
-  exp       Int  @default(0)
-  nGotLikes Int  @default(0)
-  nCommits  Int  @default(0)
+  id        Int    @default(autoincrement()) @id
+  user      User   @relation(fields: [userId], references: [id])
+  userId    String
+  level     Int    @default(0)
+  exp       Int    @default(0)
+  nGotLikes Int    @default(0)
+  nCommits  Int    @default(0)
 }
 
 model DailyProfile {
   id             Int      @default(autoincrement()) @id
-  user           User     @relation(references: [id])
+  user           User     @relation(fields: [userId], references: [id])
+  userId         String
   nLikes         Int      @default(0)
-  // nFeeds         Int      @default(0)
+  nFeeds         Int      @default(0)
   nEventFollows  Int      @default(0)
   nTickerFollows Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
 
+model Comment {
+  id        Int      @default(autoincrement()) @id
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  body      String
+  state     State    @default(PUBLIC)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // likes     Like[]
+  feed      Feed?    @relation(fields: [feedId], references: [id])
+  feedId    Int?
+  commit    Commit?  @relation(fields: [commitId], references: [id])
+  commitId  Int?
+}
+
 model Feed {
-  id        Int       @default(autoincrement()) @id
-  user      User      @relation(references: [id])
+  id        Int        @default(autoincrement()) @id
+  user      User       @relation(fields: [userId], references: [id])
+  userId    String
   header    String
-  post      Post?     @relation(references: [id])
+  post      Post?
   // webpage   Webpage?
   // event    Event?
-  tags      Tag[]     @relation(references: [id])
+  tags      Tag[]      @relation(references: [id])
   commments Comment[]
-  // tickers  Ticker[]
-  // comments Comment[]
+  tickers   Ticker[]   @relation(references: [id])
   // feedType FeedType
-  stats     FeedStats @relation(references: [id])
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  ticker    Ticker?   @relation(references: [id])
-  likes     Like[]
+  count     Count
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  // likes     Like[]
+  likes     FeedLike[]
 }
 
 // 透過URL可以判斷是否為link
+// polls     Poll[]
+// event     Event?   @relation(references: [id])
+// ticker    Ticker?  @relation(references: [id])
+// tag       Tag?     @relation(references: [id])
+// likes     Like[]
 model Post {
   id        Int      @default(autoincrement()) @id
-  user      User     @relation(references: [id])
-  feed      Feed
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  feed      Feed     @relation(fields: [feedId], references: [id])
+  feedId    Int
   url       String?
   header    String
   body      String
   state     State    @default(PUBLIC)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  polls     Poll[]
-  event     Event?   @relation(references: [id])
-  ticker    Ticker?  @relation(references: [id])
-  tag       Tag?     @relation(references: [id])
-  likes     Like[]
+  tags      Tag[]    @relation(references: [id])
+  events    Event[]  @relation(references: [id])
+  tickers   Ticker[] @relation(references: [id])
 }
 
-model Comment {
-  id        Int      @default(autoincrement()) @id
-  user      User     @relation(references: [id])
-  body      String
-  state     State    @default(PUBLIC)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  feed      Feed?    @relation(references: [id])
-  commit    Commit?  @relation(references: [id])
-  likes     Like[]
-}
-
+// event     Event?     @relation(references: [id])
+// likes     Like[]
 model Poll {
   id        Int        @default(autoincrement()) @id
-  user      User       @relation(references: [id])
-  post      Post?      @relation(references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+  userId    String
+  post      Post?      @relation(fields: [postId], references: [id])
+  postId    Int?
   header    String
   body      String?
   choices   String[]
@@ -105,15 +119,14 @@ model Poll {
   createdAt DateTime   @default(now())
   closedAt  DateTime   @default(now())
   pollVotes PollVote[]
-  event     Event?     @relation(references: [id])
-  likes     Like[]
 }
 
 model PollVote {
   id        Int      @default(autoincrement()) @id
-  // post   Post
-  user      User     @relation(references: [id])
-  poll      Poll     @relation(references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  poll      Poll     @relation(fields: [pollId], references: [id])
+  pollId    Int
   choice    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -122,18 +135,18 @@ model PollVote {
 model Event {
   id           Int           @default(autoincrement()) @id
   header       String
-  tags         Tag[]
+  tags         Tag[]         @relation(references: [id])
   // 包含event-trend(用ticker表示)
   tickers      Ticker[]      @relation(references: [id])
-  parent       Event?        @relation("parent", references: [id])
-  children     Event[]       @relation("children")
+  // parent       Event?        @relation("parent", references: [id])
+  // children     Event[]       @relation("children")
   posts        Post[]
-  polls        Poll[]
+  // polls        Poll[]
   // similarTo [Event!]!
   createdAt    DateTime
   updatedAt    DateTime
-  events       Event[]       @relation("parent")
-  event        Event?        @relation("children", references: [id])
+  // events       Event[]       @relation("parent")
+  // event        Event?        @relation("children", references: [id])
   eventFollows EventFollow[]
   commits      Commit[]
 }
@@ -143,7 +156,7 @@ model Ticker {
   name          String         @unique
   body          String
   valid         Boolean
-  feeds         Feed[]
+  feeds         Feed[]         @relation(references: [id])
   posts         Post[]
   events        Event[]        @relation(references: [id])
   createdAt     DateTime       @default(now())
@@ -153,26 +166,28 @@ model Ticker {
   ticks         Tick[]
 }
 
-// 包含題材股
-// 包含ticker？ -> 基本面、同類股族群、連結金融商品（選擇權等） -> 可用body表示？
-// 屬性tag：新聞、分析、世界線、
+// // 包含題材股
+// // 包含ticker？ -> 基本面、同類股族群、連結金融商品（選擇權等） -> 可用body表示？
+// // 屬性tag：新聞、分析、世界線、
 model Tag {
   id        Int      @default(autoincrement()) @id
   name      String   @unique
   body      String
   valid     Boolean
-  posts     Post[]
+  posts     Post[]   @relation(references: [id])
   feeds     Feed[]   @relation(references: [id])
+  event     Event[]  @relation(references: [id])
+  // commits   Commit[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  event     Event?   @relation(references: [id])
-  commits   Commit[]
 }
 
 model EventFollow {
   id         Int      @default(autoincrement()) @id
-  user       User     @relation(references: [id])
-  event      Event    @relation(references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  event      Event    @relation(fields: [eventId], references: [id])
+  eventId    Int
   isFollowed Boolean
   createdAt  DateTime
   updatedAt  DateTime
@@ -180,8 +195,10 @@ model EventFollow {
 
 model TickerFollow {
   id         Int      @default(autoincrement()) @id
-  user       User     @relation(references: [id])
-  ticker     Ticker   @relation(references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  ticker     Ticker   @relation(fields: [tickerId], references: [id])
+  tickerId   Int
   isFollowed Boolean
   createdAt  DateTime
   updatedAt  DateTime
@@ -189,10 +206,14 @@ model TickerFollow {
 
 model Commit {
   id            Int            @default(autoincrement()) @id
-  user          User           @relation(references: [id])
-  event         Event?         @relation(references: [id])
-  ticker        Ticker?        @relation(references: [id])
-  tag           Tag?           @relation(references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String
+  event         Event?         @relation(fields: [eventId], references: [id])
+  eventId       Int?
+  ticker        Ticker?        @relation(fields: [tickerId], references: [id])
+  tickerId      Int?
+  tag           Tag?           @relation(fields: [tagId], references: [id])
+  tagId         Int?
   action        CommitAction
   description   String
   diff          String
@@ -204,35 +225,40 @@ model Commit {
 
 model CommitReview {
   id        Int      @default(autoincrement()) @id
-  user      User     @relation(references: [id])
-  commit    Commit   @relation(references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  commit    Commit   @relation(fields: [commitId], references: [id])
+  commitId  Int
   choice    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Tick {
-  id     Int      @default(autoincrement()) @id
-  ticker Ticker   @relation(references: [id])
-  value  Float
-  at     DateTime
+  id       Int      @default(autoincrement()) @id
+  ticker   Ticker   @relation(fields: [tickerId], references: [id])
+  tickerId Int
+  value    Float
+  at       DateTime
 }
 
-model Like {
-  id        Int      @default(autoincrement()) @id
-  user      User     @relation(references: [id])
-  feed      Feed?    @relation(references: [id])
-  post      Post?    @relation(references: [id])
-  poll      Poll?    @relation(references: [id])
-  comment   Comment? @relation(references: [id])
+model FeedLike {
+  // id        Int      @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  feed      Feed     @relation(fields: [feedId], references: [id])
+  feedId    Int
   choice    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@id([userId, feedId])
 }
 
-model FeedStats {
+model Count {
   id         Int      @default(autoincrement()) @id
-  feed       Feed
+  feed       Feed     @relation(fields: [feedId], references: [id])
+  feedId     Int
   nViews     Int      @default(0)
   nVoteUps   Int      @default(0)
   nVoteDowns Int      @default(0)
@@ -252,4 +278,10 @@ enum State {
   PUBLIC
   DELETED
   REPORTED
+}
+
+enum LikeChoice {
+  UP
+  DOWN
+  NEUTRAL
 }

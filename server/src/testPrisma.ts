@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { readFileSync } from 'fs'
 
 // const prisma = new PrismaClient({ errorFormat: 'minimal' })
 const prisma = new PrismaClient()

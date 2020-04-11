@@ -1,27 +1,25 @@
 import gql from 'graphql-tag'
-import { makeExecutableSchema } from 'graphql-tools'
-import { resolvers } from './resolvers'
 
-const typeDefs = gql`
-
+export const typeDefs = gql`
 type Query {
   feeds(after: String): [Feed!]!
-  feed(id: ID!): Feed!
-  event(id: ID!): Event!
-  ticker(id: ID, name: String): Ticker!
+  feed(id: ID!): Feed
+  event(id: ID!): Event
+  ticker(id: ID, name: String): Ticker
   
   comments(feedId: ID!, after: String): [Comment!]!
-  seq(id: ID!): Seq
+  # seq(id: ID!): Seq
+  ticks(tickerId: ID!, after: String): [Tick!]!
   # tag(id: ID, name: String): Tag
 
   trendFeeds: [Feed!]!
   
   me: User
-  myLikes: [Like]
-  myEventFollows: [EventFollow]
-  myTickerFollows: [TickerFollow]
-  myCommitReviews: [CommitReview]
-  # myPollVotes: [PollVote!]!
+  myLikes: [Like!]!
+  myEventFollows: [EventFollow!]!
+  myTickerFollows: [TickerFollow!]!
+  myCommitReviews: [CommitReview!]!
+  # myPollVotes: [PollVote!]!p
 
   # --- upcoming ---
   # myNotices: [Notice!]!
@@ -36,21 +34,23 @@ type Query {
 }
 
 type Mutation {
+  signup(email: String!, password: String!): AuthPayload!
+  login(email: String!, password: String!): AuthPayload!
+
   createComment(data: CommentInput!): Comment!
   updateComment(id: ID!, data: CommentInput!): Comment!
 
   createLike(data: LikeInput!): Like!
   updateLike(id: ID!, data: LikeInput!): Like!
+  upsertFeedLike(feedId: ID!, choice: Int!): FeedLike!
 
-  signup(email: String!, password: String!): AuthPayload!
-  login(email: String!, password: String!): AuthPayload!
+  # upButton = votedUp ? upsert(choice=NEUTRAL) : upsert(choice=UP)
+  # downButton = votedDown ? upsert(choice=NEUTRAL) : upsert(choice=DOWN)
 
   urlToFeed(url: String): Feed!
   upsertFeed(id: ID, data: FeedInput): Feed!
 
   # createFeedReport(feedId: ID): FeedReport
-  
-  
   upsertCommit(data: CommitInput): Commit
   updateCommitReview(data: CommitReviewInput): CommitReview
 
@@ -104,17 +104,18 @@ type Feed {
   tags: [Tag!]!
   tickers: [Ticker!]!
   # comments: [Comment]
-  stats: FeedStats!
+  count: Count!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
 
-type FeedStats {
+type Count {
   id: ID!
-  nViews:Int!
-  nVoteUps:Int!
-  nVoteDowns:Int!
-  nComments:Int!
+  nViews:Int
+  nVoteUps:Int      
+  nVoteDowns:Int      
+  nComments:Int      
+  updatedAt:DateTime 
 }
 
 type Comment {
@@ -156,7 +157,7 @@ type Event {
   tickers: [Ticker!]!
   parent: Event
   children: [Event!]!
-  hot: Seq
+  # hot: Seq
   posts: [Post!]!
   # polls: [Poll!]!
   similarTo: [Event!]!
@@ -201,9 +202,10 @@ type TagDetail {
 type Ticker {
   id: ID!
   name: String!
-  seq: Seq
+  # seq: Seq
   events: [Event]
   feeds: [Feed]
+  ticks: [Tick]
 }
 
 
@@ -248,13 +250,11 @@ type CommitReview {
   updatedAt: DateTime
 }
 
-type Seq {
+type Tick {
   id: ID
-  from: DateTime!
-  to: DateTime!
-  values: String
-  # values: [Float]!
-  # at: [DateTime!]!
+  tickerId: Int
+  value: Float
+  at: DateTime
 }
 
 input FeedInput {
@@ -268,9 +268,6 @@ input PostInput {
   header: String!
   body: String!
 }
-
-
-
 
 input CommitInput {
   objType: String
@@ -399,8 +396,3 @@ enum PatchSize {
 #   exp: Int
 # }
 `
-
-export const schema = makeExecutableSchema({
-  resolvers,
-  typeDefs,
-})

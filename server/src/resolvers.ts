@@ -3,31 +3,69 @@ import { sign } from 'jsonwebtoken'
 import { GraphQLResolverMap } from 'apollo-graphql'
 import { GraphQLDateTime } from 'graphql-iso-date'
 import { Context } from './context'
-import { APP_SECRET } from './permissions'
+import { APP_SECRET } from './server'
 
 export const resolvers: GraphQLResolverMap<Context> = {
-    DateTime: GraphQLDateTime, // custom scalars
+    DateTime: GraphQLDateTime, // custom scalar
     Query: {
-        me: (parent, args, { prisma, req }) => {
-            const userId = req.userId
-            return prisma.user.findOne({ where: { id: userId } })
+        feeds: (parent, { after = null }, { prisma }) => {
+            // TODO: 加入@cache-control
+            // return ctx.prisma.feed.findMany({ "after": { id: after } })
+            return prisma.feed.findMany({
+                first: 5,
+                include: { count: true }
+            })
+        },
+        trendFeeds: (parent, args, ctx) => {
+            // return ctx.prisma.feed.findOne({ where: { id } })
+            return []
         },
         feed: (parent, { id }, ctx) => {
             return ctx.prisma.feed.findOne({ where: { id } })
         },
-        feeds: (parent, { after = null }, { prisma }) => {
-            // TODO: 改用cache做判段，不直接連結
-            // return ctx.prisma.feed.findMany({ "after": { id: after } })
-            return prisma.feed.findMany({ first: 5 })
+        comments: (parent, { feedId, after }, ctx) => {
+            return ctx.prisma.comment.findMany({ where: { feedId } })
+        },
+        event: (parent, { id }, ctx) => {
+            return ctx.prisma.event.findOne({ where: { id } })
+        },
+        ticker: (parent, { id, name }, ctx) => {
+            return ctx.prisma.ticker.findOne({ where: { id } })
+        },
+        ticks: (parent, { tickerId, after }, ctx) => {
+            return ctx.prisma.tick.findMany({ where: { tickerId }, first: 50 })
+        },
+        me: (parent, args, { prisma, req }) => {
+            const userId = req.userId
+            return prisma.user.findOne({ where: { id: userId } })
+        },
+        myLikes: (parent, args, { prisma, req }) => {
+            const userId = req.userId
+            return prisma.user.findOne({ where: { id: userId } })
+        },
+        myEventFollows: (parent, args, { prisma, req }) => {
+            const userId = req.userId
+            return prisma.user.findOne({ where: { id: userId } })
+        },
+        myTickerFollows: (parent, args, { prisma, req }) => {
+            const userId = req.userId
+            return prisma.user.findOne({ where: { id: userId } })
+        },
+        myCommitReviews: (parent, args, { prisma, req }) => {
+            const userId = req.userId
+            return prisma.user.findOne({ where: { id: userId } })
         },
     },
     Mutation: {
-        signup: async (parent, { email, password }, { prisma }) => {
+        signup: async (parent, { email, password }, { prisma, res }) => {
+            res.clearCookie('token')
             const hashedPassword = await hash(password, 10)
             const user = await prisma.user.create({
                 data: {
                     email,
                     password: hashedPassword,
+                    profile: { create: {} },
+                    dailyProfile: { create: {} }
                 },
             })
             return {
@@ -39,13 +77,11 @@ export const resolvers: GraphQLResolverMap<Context> = {
             const user = await prisma.user.findOne({
                 where: { email }
             })
-            if (!user) {
-                throw new Error('Could not find a match for username and password')
-            }
+            if (!user) throw new Error('Could not find a match for username and password')
+
             const valid = await compare(password, user.password)
-            if (!valid) {
-                throw new Error('Could not find a match for username and password')
-            }
+            if (!valid) throw new Error('Could not find a match for username and password')
+
             const token = sign({ userId: user.id }, APP_SECRET)
             res.cookie('token', `Bearer ${token}`, {
                 httpOnly: true,
@@ -59,10 +95,43 @@ export const resolvers: GraphQLResolverMap<Context> = {
         },
         updateComment: (parent, { id, data }, { prisma, req }) => {
             return prisma.comment.update({
-                where: { id: Number(id) },
-                data
+                where: { id: Number(id) }, data
             })
         },
+        upsertFeedLike: (parent, { feedId, choice }, { prisma, req }) => {
+            return prisma.feedLike.upsert({
+                where: {
+                    userId_feedId: {
+                        userId: req.userId as string,
+                        feedId: Number(feedId),
+                    }
+                },
+                update: { choice },
+                create: {
+                    choice,
+                    user: { connect: { id: req.userId } },
+                    feed: { connect: { id: Number(feedId) } },
+                }
+            })
+        },
+        // createLike: (parent, { data }, { prisma, req }) => {
+        //     return prisma.like.create({
+        //         data: {
+        //             choice: data.choice,
+        //             feed: { connect: { id: Number(data.feedId) } },
+        //             user: { connect: { id: req.userId } },
+        //         }
+        //     })
+        // },
+        // updateLike: (parent, { id, data }, { prisma, req }) => {
+        // return prisma.like.update({
+        //     where: { id: Number(id), user: {connect: {id: req.userId}} },
+        //     data: {
+        //         choice: data.choice
+        //     }
+        // })
+        // },
+
         // upsertEventTrack: (parent, { id, eventId, isTracked }, { prisma, req }) => {
         //     const data = { userId: req.userId, eventId, isTracked }
         //     if (id == null) {
@@ -129,9 +198,10 @@ export const resolvers: GraphQLResolverMap<Context> = {
         //     }).comments()
         // },
         // stats: (parent, args, { prisma }) => {
-        //     return prisma.feed.findOne({
-        //         where: { id: parent.id },
-        //     }).stats()
+        //     console.log(parent)
+        //     // return prisma.feed.findOne({
+        //     //     where: { id: parent.id },
+        //     // }).stats()
         // },
     },
     Comment: {
