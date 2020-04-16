@@ -1,5 +1,8 @@
-const { nexusPrismaPlugin } = require('nexus-prisma')
-const { idArg, makeSchema, objectType, stringArg } = require('@nexus/schema')
+import { nexusPrismaPlugin } from 'nexus-prisma'
+import { intArg, makeSchema, objectType, stringArg } from '@nexus/schema'
+import { seedUsers } from './seed'
+
+import path from 'path'
 
 const User = objectType({
   name: 'User',
@@ -21,6 +24,17 @@ const Post = objectType({
     t.model.content()
     t.model.published()
     t.model.author()
+    t.model.authorId()
+  },
+})
+
+const Profile = objectType({
+  name: 'Profile',
+  definition(t) {
+    t.model.id()
+    t.model.bio()
+    t.model.user()
+    t.model.userId()
   },
 })
 
@@ -28,6 +42,15 @@ const Query = objectType({
   name: 'Query',
   definition(t) {
     t.crud.post()
+
+    t.crud.profile()
+    
+    t.list.field('allProfiles', {
+      type: 'Profile',
+      resolve: (_, args, ctx) => {
+        return ctx.prisma.profile.findMany()
+      },
+    })
 
     t.list.field('feed', {
       type: 'Post',
@@ -63,6 +86,26 @@ const Mutation = objectType({
     t.crud.createOneUser({ alias: 'signupUser' })
     t.crud.deleteOnePost()
 
+    t.list.field('seed', {
+      type: 'User',
+      resolve: async (_, args, ctx) => {
+        await ctx.prisma.post.deleteMany({})
+        await ctx.prisma.profile.deleteMany({})
+        await ctx.prisma.user.deleteMany({})
+
+        const createdUsers = []
+        for (const userData of seedUsers) {
+          const createdUser = await ctx.prisma.user.create({
+            data: userData,
+            include: { posts: true },
+          })
+          createdUsers.push(createdUser)
+        }
+
+        return createdUsers
+      },
+    })
+
     t.field('createDraft', {
       type: 'Post',
       args: {
@@ -88,7 +131,7 @@ const Mutation = objectType({
       type: 'Post',
       nullable: true,
       args: {
-        id: idArg(),
+        id: intArg(),
       },
       resolve: (_, { id }, ctx) => {
         return ctx.prisma.post.update({
@@ -100,12 +143,22 @@ const Mutation = objectType({
   },
 })
 
-const schema = makeSchema({
-  types: [Query, Mutation, Post, User],
-  plugins: [nexusPrismaPlugin()],
+const generateArtifacts = Boolean(process.env.GENERATE_ARTIFACTS)
+
+export const schema = makeSchema({
+  types: [Query, Mutation, Post, User, Profile],
+  plugins: [
+    nexusPrismaPlugin({
+      shouldGenerateArtifacts: generateArtifacts,
+      outputs: {
+        typegen: path.join(__dirname, '/generated/prisma-nexus.ts'),
+      },
+    }),
+  ],
+  shouldGenerateArtifacts: generateArtifacts,
   outputs: {
-    schema: __dirname + '/../schema.graphql',
-    typegen: __dirname + '/generated/nexus.ts',
+    schema: path.join(__dirname, '/../../schema.graphql'),
+    typegen: path.join(__dirname, '/generated/nexus.ts'),
   },
   typegenAutoConfig: {
     contextType: 'Context.Context',
@@ -121,7 +174,3 @@ const schema = makeSchema({
     ],
   },
 })
-
-module.exports = {
-  schema
-}

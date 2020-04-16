@@ -1,9 +1,31 @@
 import { compare, hash } from 'bcryptjs'
 import { sign } from 'jsonwebtoken'
 import { nexusPrismaPlugin } from 'nexus-prisma'
-import { intArg, makeSchema, objectType, stringArg } from 'nexus'
+import { intArg, makeSchema, objectType, stringArg } from '@nexus/schema'
 
-import { APP_SECRET } from './permissions'
+const User = objectType({
+  name: 'User',
+  definition(t) {
+    t.model.id()
+    t.model.name()
+    t.model.email()
+    t.model.posts({
+      pagination: false,
+    })
+  },
+})
+
+const Post = objectType({
+  name: 'Post',
+  definition(t) {
+    t.model.id()
+    t.model.title()
+    t.model.content()
+    t.model.published()
+    t.model.author()
+    t.model.authorId()
+  },
+})
 
 const Query = queryType({
   definition(t) {
