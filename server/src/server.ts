@@ -88,6 +88,7 @@ const mocks = {
 const baseSchema = makeExecutableSchema({ typeDefs, resolvers })
 const schema = applyMiddleware(baseSchema, permissions)
 const server = new ApolloServer({
+  // schema: baseSchema,
   schema,
   typeDefs,
   resolvers,
@@ -104,7 +105,7 @@ const server = new ApolloServer({
     }
   },
   // mocks: true,
-  // mocks
+  mocks,
   debug: true,
   // plugins: [ logError],
   formatError: (err) => {

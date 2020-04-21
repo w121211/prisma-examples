@@ -24,32 +24,34 @@ async function main() {
       dailyProfile: { create: {} }
     }
   })
-  const feed1 = await prisma.feed.create({
+  const p1 = await prisma.post.create({
     data: {
-      header: "feed header 1",
+      title: "feed header 1",
+      content: "this is content 1",
       user: { connect: { id: user1.id } },
       count: { create: {} }
     }
   })
-  const feed2 = await prisma.feed.create({
+  const p2 = await prisma.post.create({
     data: {
-      header: "feed header 2",
+      title: "feed header 2",
+      content: "this is content 2",
       user: { connect: { id: user2.id } },
       count: { create: {} }
     }
   })
-  const like1 = await prisma.feedLike.create({
+  const l1 = await prisma.postLike.create({
     data: {
       choice: 0,
       user: { connect: { id: "" } },
-      feed: { connect: { id: feed1.id } },
+      post: { connect: { id: p1.id } },
     }
   })
-  await prisma.feedLike.upsert({
+  await prisma.postLike.upsert({
     where: {
-      userId_feedId: {
+      userId_postId: {
         userId: user1.id,
-        feedId: feed1.id,
+        postId: p1.id,
       }
     },
     update: {
@@ -58,7 +60,7 @@ async function main() {
     create: {
       choice: 1,
       user: { connect: { id: user1.id } },
-      feed: { connect: { id: feed1.id } },
+      post: { connect: { id: p1.id } },
     }
   })
 

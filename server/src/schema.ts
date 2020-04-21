@@ -1,398 +1,285 @@
 import gql from 'graphql-tag'
 
 export const typeDefs = gql`
-type Query {
-  feeds(after: String): [Feed!]!
-  feed(id: ID!): Feed
-  event(id: ID!): Event
-  ticker(id: ID, name: String): Ticker
-  
-  comments(feedId: ID!, after: String): [Comment!]!
-  # seq(id: ID!): Seq
-  ticks(tickerId: ID!, after: String): [Tick!]!
-  # tag(id: ID, name: String): Tag
+  type Query {
+    newPosts(after: String): [Post!]!
+    risingPosts(after: String): [Post!]!
+    trendPosts(after: String): [Post!]!
+    post(id: ID!): Post!
 
-  trendFeeds: [Feed!]!
-  
-  me: User
-  myLikes: [Like!]!
-  myEventFollows: [EventFollow!]!
-  myTickerFollows: [TickerFollow!]!
-  myCommitReviews: [CommitReview!]!
-  # myPollVotes: [PollVote!]!p
+    comments(postId: ID!, after: String): [Comment!]!
 
-  # --- upcoming ---
-  # myNotices: [Notice!]!
-  # mySignals: [Signal]
-  # myBets: [Bet]
-  # groups: [Group]
-  # myGroups: [Group]
-  # groupPosts(groupId: ID): [Post]
+    symbol(id: ID!, slug: String!): Symbol!
+    ticks(symbolId: ID!, after: String): [Tick!]!
+    # event(id: ID!): Event!
+    # ticker(id: ID, name: String): Ticker!
 
-  launches(pageSize: Int, after: String): LaunchConnection!
-  launch(id: ID!): Launch
-}
+    tagHints(input: String): [String!]!
+    tickerHints(input: String): [String!]!
+    eventHints(input: String): [String!]!
 
-type Mutation {
-  signup(email: String!, password: String!): AuthPayload!
-  login(email: String!, password: String!): AuthPayload!
+    me: User!
+    myPosts: [ID!]!
+    myPostLikes(after: String): [PostLike!]!
+    myPostVotes(after: String): [PostVote!]!
+    myComments(after: String): [ID!]!
+    myCommentLikes(after: String): [CommentLike!]!
+    myFollows: [Follow!]!
+    myCommits(after: String): [ID!]!
+    myCommitReviews(after: String): [CommitReview!]!
+    myWaitedCommitReviews: [CommitReview!]!
 
-  createComment(data: CommentInput!): Comment!
-  updateComment(id: ID!, data: CommentInput!): Comment!
+    ### upcoming ###
+    # myBets: [Bet!]!
+    # myNotices: [Notice!]!
+    # mySignals: [Signal]
+    # groups: [Group]
+    # myGroups: [Group]
+    # groupPosts(groupId: ID): [Post]
+  }
 
-  createLike(data: LikeInput!): Like!
-  updateLike(id: ID!, data: LikeInput!): Like!
-  upsertFeedLike(feedId: ID!, choice: Int!): FeedLike!
+  type Mutation {
+    signup(email: String!, password: String!): AuthPayload!
+    login(email: String!, password: String!): AuthPayload!
+    logout: Boolean!
 
-  # upButton = votedUp ? upsert(choice=NEUTRAL) : upsert(choice=UP)
-  # downButton = votedDown ? upsert(choice=NEUTRAL) : upsert(choice=DOWN)
+    fetchPage(link: String!): Page!
 
-  urlToFeed(url: String): Feed!
-  upsertFeed(id: ID, data: FeedInput): Feed!
+    createPost(data: PostInput!): Post!
+    updatePost(id: ID!, data: PostInput!): Post!
+    createPostLike(postId: ID!, data: LikeInput!): PostLike!
+    updatePostLike(postId: ID!, data: LikeInput!): PostLike!
+    createPostVote(postId: ID!, data: VoteInput!): PostVote!
+    updatePostVote(postId: ID!, data: VoteInput!): PostVote!
 
-  # createFeedReport(feedId: ID): FeedReport
-  upsertCommit(data: CommitInput): Commit
-  updateCommitReview(data: CommitReviewInput): CommitReview
+    createComment(data: CommentInput!): Comment!
+    updateComment(id: ID!, data: CommentInput!): Comment!
+    createCommentLike(commentId: ID!, data: LikeInput!): CommentLike!
+    updateCommentLike(commentId: ID!, data: LikeInput!): CommentLike!
 
-  # upsertPost(data: PostInput): Post
-  # upsertPoll(data: PollInput): Poll
+    createCommit(data: CommitInput!): Commit!
+    updateCommit(id: ID!, data: CommitInput!): Commit!
+    applyCommitReview(commitId: ID!): ApplyCommitReviewResult!
+    updateCommitReview(commitId: ID!, data: CommitReviewInput!): CommitReview!
 
-  # 因為follow需要先檢查資格，不能用upsert
-  followEvent(eventId: ID): EventFollow!
-  unfollowEvent(eventId: ID): EventFollow!
+    createFollow(symbolId: ID!, data: FollowInput!): Follow!
+    updateFollow(symbolId: ID!, data: FollowInput!): Follow!
 
-  # --- upcomings ----
-  # upsertBet(data: BetInput): Bet
-  # createGroup(data: GroupInput): Group
-  # updateGroup(data: GroupInput): Group
-  # deleteGroup(id: ID): Boolean
-  # joinGroup(id: ID): Boolean
-  # leaveGroup(id: ID): Boolean
-  # inviteJoin(groupId: ID, criteria: String): Boolean
+    ### upcoming ###
+    # uploadImg(): Img
+    # createBet(): Bet
+    # upsertBet(data: BetInput): Bet
+    # createGroup(data: GroupInput): Group
+    # updateGroup(data: GroupInput): Group
+    # joinGroup(id: ID): Boolean
+    # leaveGroup(id: ID): Boolean
+    # inviteJoin(groupId: ID, criteria: String): Boolean
+  }
 
-  # createDraft(authorEmail: String, content: String, title: String!): Post!
-  # deleteOnePost(where: PostWhereUniqueInput!): Post
-  # publish(id: ID): Post
-  # signupUser(data: UserCreateInput!): User!
+  type Page {
+    id: ID!
+    post: Post # null if not existed
+    title: String
+    symbols: [String!]
+    tags: [String!]
+    events: [String!]
+  }
 
-  # if false, signup failed -- check errors
-  bookTrips(launchIds: [ID]!): TripUpdateResponse!
-  # if false, cancellation failed -- check errors
-  cancelTrip(launchId: ID!): TripUpdateResponse!
-  # login(email: String): String # login token
-  # for use with the iOS tutorial
-  # uploadProfileImage(file: Upload!): User
-}
+  type AuthPayload {
+    token: String!
+    user: User!
+  }
 
-type AuthPayload {
-  token: String!
-  user: User!
-}
+  type User {
+    id: ID!
+    email: String!
+    # profileImage: String
+    # trips: [Launch]!
+  }
 
-# type User {
-#   id: ID
-#   email: String
-#   # profile: Profile
-# }
+  type Post {
+    id: ID!
+    userId: ID
+    view: View!
+    title: String
+    content: String
+    symbols: [Symbol!]!
+    count: PostCount!
+    voteCount: PostVoteCount
+    createdAt: DateTime
+    updatedAt: DateTime
+  }
 
-type Feed {
-  id: ID!
-  user: User
-  header: String!
-  body: String
-  event: Event
-  tags: [Tag!]!
-  tickers: [Ticker!]!
-  # comments: [Comment]
-  count: Count!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
+  input PostInput {
+    view: View
+    title: String
+    content: String
+    createdAt: DateTime
+    updatedAt: DateTime
+  }
 
-type Count {
-  id: ID!
-  nViews:Int
-  nVoteUps:Int      
-  nVoteDowns:Int      
-  nComments:Int      
-  updatedAt:DateTime 
-}
+  type PostLike {
+    postId: ID!
+    choice: Int!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
 
-type Comment {
-  id: ID!
-  # user: ID!
-  body: String!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
+  input LikeInput {
+    choice: Int!
+  }
 
-input CommentInput {
-  body: String!
-}
+  type PostVote {
+    postId: Int!
+    choice: Int!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
 
-type Like {
-  id: ID!
-  feedId: ID
-  postId: ID
-  pollId: ID
-  commentId: ID  
-  choice: Int
-  createdAt: DateTime
-  updatedAt: DateTime
-}
+  input VoteInput {
+    choice: Int!
+  }
 
-input LikeInput {
-  feedId: ID
-  postId: ID
-  pollId: ID
-  commentId: ID
-  choice: Int!
-}
+  type PostCount {
+    id: ID!
+    nViews: Int!
+    nUps: Int!
+    nDowns: Int!
+    nComments: Int!
+    updatedAt: DateTime!
+  }
 
-type Event {
-  id: ID
-  slug: String!
-  header: String!
-  tags: [Tag!]!
-  tickers: [Ticker!]!
-  parent: Event
-  children: [Event!]!
-  # hot: Seq
-  posts: [Post!]!
-  # polls: [Poll!]!
-  similarTo: [Event!]!
-}
+  type PostVoteCount {
+    id: ID!
+    result: String!
+    updatedAt: DateTime!
+  }
 
-type EventFollow{
-  id: ID!
-  user: User
-  # event: Event
-  event: ID
-  isFollowed: Boolean!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
+  type Comment {
+    id: ID!
+    view: View!
+    content: String
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
 
-type TickerFollow{
-  id: ID!
-  user: User
-  # ticker: Ticker
-  ticker: ID
-  isFollowed: Boolean!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
+  input CommentInput {
+    view: View
+    content: String!
+  }
 
-type Tag {
-  id: ID!
-  name: String!
-  valid: Boolean!
-  # posts: [Post]
-  # feeds: [Feed]
-  # events: [Event]
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
+  type CommentCount {
+    id: ID!
+    nViews: Int!
+    nUps: Int!
+    nDowns: Int!
+    updatedAt: DateTime!
+  }
 
-type TagDetail {
-  id: ID!
-  valid: Boolean!
-}
+  type CommentLike {
+    commentId: ID!
+    choice: Int!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
 
-type Ticker {
-  id: ID!
-  name: String!
-  # seq: Seq
-  events: [Event]
-  feeds: [Feed]
-  ticks: [Tick]
-}
+  type Symbol {
+    id: ID!
+    slug: String!
+    valid: Boolean!
+    title: String
+    content: String
+    posts: [Post!]!
+    ticks: [Tick!]!
+    commits: [ID!]!
+  }
 
+  type Follow {
+    id: ID!
+    symbol: Symbol!
+    followed: Boolean!
+    # createdAt: DateTime!
+    updatedAt: DateTime!
+  }
 
+  input FollowInput {
+    symbolId: ID!
+    followed: Boolean!
+  }
 
-type Post {
-  id: ID!
-  user: User
-  body: String
-  createdAt: DateTime
-  updatedAt: DateTime
-}
+  type Commit {
+    id: ID!
+    symbolId: ID!
+    action: CommitAction!
+    diff: String
+    post: Post
+    reviews: [CommitReview]
+    createdAt: DateTime
+    updatedAt: DateTime
+  }
 
-type Poll {
-  id: ID!
-  user: User
-  body: String
-  createdAt: DateTime
-  updatedAt: DateTime
-}
+  input CommitInput {
+    action: CommitAction!
+    postContent: String!
+    # post: String!
+  }
 
-type Commit {
-  id: ID
-  user: User
-  event: Event
-  ticker: Ticker
-  tag: Tag
-  action: CommitAction
-  description: String
-  diff: String
-  comments: [Comment]
-  commitReviews: [CommitReview]
-  createdAt: DateTime
-  updatedAt: DateTime
-}
+  type CommitReview {
+    id: ID!
+    user: User
+    commit: Commit
+    choice: Int
+    createdAt: DateTime
+    updatedAt: DateTime
+  }
 
-type CommitReview {
-  id: ID
-  user: User
-  commit: Commit
-  choice: Int
-  createdAt: DateTime
-  updatedAt: DateTime
-}
+  input CommitReviewInput {
+    commit: ID!
+    choice: Int!
+  }
 
-type Tick {
-  id: ID
-  tickerId: Int
-  value: Float
-  at: DateTime
-}
+  type Tick {
+    id: ID!
+    symbolId: ID!
+    value: Float!
+    at: DateTime!
+  }
 
-input FeedInput {
-  header: String
-  url: String
-  post: ID
-  tags: [ID]
-}
+  enum TrackState {
+    TRACKING
+    UNTRACKING
+  }
 
-input PostInput {
-  header: String!
-  body: String!
-}
+  enum FeedType {
+    WEBPAGE
+    POST
+  }
 
-input CommitInput {
-  objType: String
-  objId: ID
-  action: CommitAction
-  description: String
-  diff: String
-}
+  enum TagType {
+    TICKER
+    TICKER_GROUP
+    KEYWORD
+  }
 
-input CommitReviewInput {
-  id: ID
-  commit: ID
-  choice: Int
-}
+  enum Taggable {
+    FEED
+    EVENT
+    POST
+  }
 
-scalar DateTime
+  enum CommitAction {
+    CREATE
+    UPDATE
+    DELETE
+    MERGE
+  }
 
-enum TrackState {
-  TRACKING
-  UNTRACKING
-}
+  enum View {
+    PUBLIC
+    DELETED
+    REPORTED
+    LOCKED
+  }
 
-enum FeedType {
-  WEBPAGE
-  POST
-}
-
-enum TagType {
-  TICKER
-  TICKER_GROUP
-  KEYWORD
-}
-
-enum Likable {
-  FEED
-  POST
-  POLL
-  COMMENT
-}
-
-enum Taggable {
-  FEED
-  EVENT
-  POST
-}
-
-enum CommitAction {
-  CREATE
-  UPDATE
-  DELETE
-  MERGE
-}
-
-type TripUpdateResponse {
-    success: Boolean!
-    message: String
-    launches: [Launch]
-}
-
-"""
-Simple wrapper around our list of launches that contains a cursor to the
-last item in the list. Pass this cursor to the launches query to fetch results
-after these.
-"""
-type LaunchConnection {
-  cursor: String!
-  hasMore: Boolean!
-  launches: [Launch]!
-}
-type Launch {
-  id: ID!
-  site: String
-  mission: Mission
-  rocket: Rocket
-  isBooked: Boolean!
-}
-type Rocket {
-  id: ID!
-  name: String
-  type: String
-}
-type User {
-  id: ID!
-  email: String!
-  profileImage: String
-  trips: [Launch]!
-}
-type Mission {
-  name: String
-  missionPatch(size: PatchSize): String
-}
-enum PatchSize {
-  SMALL
-  LARGE
-}
-
-# input UserCreateInput {
-#   email: String!
-#   id: ID
-#   name: String
-#   posts: PostCreateManyWithoutPostsInput
-# }
-
-# input PostCreateManyWithoutPostsInput {
-#   connect: [PostWhereUniqueInput!]
-#   create: [PostCreateWithoutAuthorInput!]
-# }
-
-# input PostCreateWithoutAuthorInput {
-#   content: String
-#   id: ID
-#   published: Boolean
-#   title: String!
-# }
-
-# --- upcomings or unsure ---
-
-# type TagStats {
-#   id: ID!
-#   nCounts: Int
-# }
-
-
-# type Profile {
-#   level: Int
-#   exp: Int
-# }
+  scalar DateTime
 `

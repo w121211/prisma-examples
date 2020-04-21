@@ -6,227 +6,188 @@ import { Context } from './context'
 import { APP_SECRET } from './server'
 
 export const resolvers: GraphQLResolverMap<Context> = {
-    DateTime: GraphQLDateTime, // custom scalar
-    Query: {
-        feeds: (parent, { after = null }, { prisma }) => {
-            // TODO: 加入@cache-control
-            // return ctx.prisma.feed.findMany({ "after": { id: after } })
-            return prisma.feed.findMany({
-                first: 5,
-                include: { count: true }
-            })
-        },
-        trendFeeds: (parent, args, ctx) => {
-            // return ctx.prisma.feed.findOne({ where: { id } })
-            return []
-        },
-        feed: (parent, { id }, ctx) => {
-            return ctx.prisma.feed.findOne({ where: { id } })
-        },
-        comments: (parent, { feedId, after }, ctx) => {
-            return ctx.prisma.comment.findMany({ where: { feedId } })
-        },
-        event: (parent, { id }, ctx) => {
-            return ctx.prisma.event.findOne({ where: { id } })
-        },
-        ticker: (parent, { id, name }, ctx) => {
-            return ctx.prisma.ticker.findOne({ where: { id } })
-        },
-        ticks: (parent, { tickerId, after }, ctx) => {
-            return ctx.prisma.tick.findMany({ where: { tickerId }, first: 50 })
-        },
-        me: (parent, args, { prisma, req }) => {
-            const userId = req.userId
-            return prisma.user.findOne({ where: { id: userId } })
-        },
-        myLikes: (parent, args, { prisma, req }) => {
-            const userId = req.userId
-            return prisma.user.findOne({ where: { id: userId } })
-        },
-        myEventFollows: (parent, args, { prisma, req }) => {
-            const userId = req.userId
-            return prisma.user.findOne({ where: { id: userId } })
-        },
-        myTickerFollows: (parent, args, { prisma, req }) => {
-            const userId = req.userId
-            return prisma.user.findOne({ where: { id: userId } })
-        },
-        myCommitReviews: (parent, args, { prisma, req }) => {
-            const userId = req.userId
-            return prisma.user.findOne({ where: { id: userId } })
-        },
+  DateTime: GraphQLDateTime, // custom scalar
+  Query: {
+    newPosts: (parent, { after = null }, { prisma }) => {
+      return prisma.post.findMany({
+        first: 20,
+        include: { count: true },
+      })
     },
-    Mutation: {
-        signup: async (parent, { email, password }, { prisma, res }) => {
-            res.clearCookie('token')
-            const hashedPassword = await hash(password, 10)
-            const user = await prisma.user.create({
-                data: {
-                    email,
-                    password: hashedPassword,
-                    profile: { create: {} },
-                    dailyProfile: { create: {} }
-                },
-            })
-            return {
-                token: sign({ userId: user.id }, APP_SECRET),
-                user,
-            }
-        },
-        login: async (parent, { email, password }, { prisma, res }) => {
-            const user = await prisma.user.findOne({
-                where: { email }
-            })
-            if (!user) throw new Error('Could not find a match for username and password')
-
-            const valid = await compare(password, user.password)
-            if (!valid) throw new Error('Could not find a match for username and password')
-
-            const token = sign({ userId: user.id }, APP_SECRET)
-            res.cookie('token', `Bearer ${token}`, {
-                httpOnly: true,
-                maxAge: 1000 * 60 * 60 * 24
-                // secure: true,  // https only
-            })
-            return { token, user }
-        },
-        createComment: (parent, { data }, { prisma, req }) => {
-            return prisma.comment.create({ userId: req.userId, ...data })
-        },
-        updateComment: (parent, { id, data }, { prisma, req }) => {
-            return prisma.comment.update({
-                where: { id: Number(id) }, data
-            })
-        },
-        upsertFeedLike: (parent, { feedId, choice }, { prisma, req }) => {
-            return prisma.feedLike.upsert({
-                where: {
-                    userId_feedId: {
-                        userId: req.userId as string,
-                        feedId: Number(feedId),
-                    }
-                },
-                update: { choice },
-                create: {
-                    choice,
-                    user: { connect: { id: req.userId } },
-                    feed: { connect: { id: Number(feedId) } },
-                }
-            })
-        },
-        // createLike: (parent, { data }, { prisma, req }) => {
-        //     return prisma.like.create({
-        //         data: {
-        //             choice: data.choice,
-        //             feed: { connect: { id: Number(data.feedId) } },
-        //             user: { connect: { id: req.userId } },
-        //         }
-        //     })
-        // },
-        // updateLike: (parent, { id, data }, { prisma, req }) => {
-        // return prisma.like.update({
-        //     where: { id: Number(id), user: {connect: {id: req.userId}} },
-        //     data: {
-        //         choice: data.choice
-        //     }
-        // })
-        // },
-
-        // upsertEventTrack: (parent, { id, eventId, isTracked }, { prisma, req }) => {
-        //     const data = { userId: req.userId, eventId, isTracked }
-        //     if (id == null) {
-        //         return prisma.eventTrack.create({ data })
-        //     } else {
-        //         return prisma.eventTrack.update({
-        //             where: { id: Number(id) },
-        //             data,
-        //         })
-        //     }
-        // },
-
-        // myLikes: (parent, args, { prisma, req }) => {
-        //     const userId = req.userId
-        //     return prisma.like.findMany({
-        //         where: { userId: Number(userId) },
-        //         first: 100,
-        //     })
-        // },
-
-        // createDraft: (parent, args, ctx) => {
-        //     return ctx.prisma.post.create({
-        //         data: {
-        //             title: args.title,
-        //             content: args.content,
-        //             published: false,
-        //             author: {
-        //                 connect: { email: args.authorEmail },
-        //             },
-        //         },
-        //     })
-        // },
-        // deleteOnePost: (parent, args, ctx: Context) => {
-        //     return ctx.prisma.post.delete({
-        //         where: { id: Number(args.where.id) },
-        //     })
-        // },
-        // publish: (parent, args, ctx: Context) => {
-        //     return ctx.prisma.post.update({
-        //         where: { id: Number(args.id) },
-        //         data: { published: true },
-        //     })
-        // },
+    risingPosts: (parent, args, ctx) => {
+      return []
     },
-    Feed: {
-        // event: (parent, args, { prisma }) => {
-        //     return prisma.feed.findOne({
-        //         where: { id: parent.id },
-        //     }).event()
-        // },
-        // tags: (parent, args, { prisma }) => {
-        //     return prisma.feed.findOne({
-        //         where: { id: parent.id },
-        //     }).tags()
-        // },
-        // tickers: (parent, args, { prisma }) => {
-        //     return prisma.feed.findOne({
-        //         where: { id: parent.id },
-        //     }).tickers()
-        // },
-        // comments: (parent, args, { prisma }) => {
-        //     return prisma.feed.findOne({
-        //         where: { id: parent.id },
-        //     }).comments()
-        // },
-        // stats: (parent, args, { prisma }) => {
-        //     console.log(parent)
-        //     // return prisma.feed.findOne({
-        //     //     where: { id: parent.id },
-        //     // }).stats()
-        // },
+    trendPosts: (parent, args, ctx) => {
+      return []
     },
-    Comment: {
-        // stats: (parent, args, { prisma }) => {
-        //     return prisma.comment.findOne({
-        //         where: { id: parent.id },
-        //     }).stats()
-        // }
-    }
-    // User: {
-    //     posts: (parent, args, ctx: Context) => {
-    //         return ctx.prisma.user
-    //             .findOne({
-    //                 where: { id: parent.id },
-    //             })
-    //             .posts()
-    //     },
+    post: (parent, { id }, { prisma }) => {
+      return prisma.post.findOne({
+        where: { id }
+      })
+    },
+    comments: (parent, { postId, after }, { prisma }) => {
+      return prisma.comment.findMany({ where: { postId }, first: 20 })
+    },
+    symbol: (parent, { id, slug }, { prisma }) => {
+      return prisma.symbol.findOne({ where: { id, slug } })
+    },
+    ticks: (parent, { symbolId, after }, ctx) => {
+      return ctx.prisma.tick.findMany({ where: { symbolId }, first: 50 })
+    },
+    me: (parent, args, { prisma, req }) => {
+      return prisma.user.findOne({ where: { id: req.userId } })
+    },
+    myPostLikes: (parent, args, { prisma, req }) => {
+      return prisma.postLike.findMany({ where: { userId: req.userId }, first: 50 })
+    },
+    myFollows: (parent, args, { prisma, req }) => {
+      return prisma.follow.findMany({ where: { userId: req.userId, followed: true }, first: 50 })
+    },
+    // myCommitReviews: (parent, args, { prisma, req }) => {
+    //   const userId = req.userId
+    //   return prisma.user.findOne({ where: { id: userId } })
     // },
-    // Post: {
-    //     author: (parent, args, ctx: Context) => {
-    //         return ctx.prisma.post
-    //             .findOne({
-    //                 where: { id: parent.id },
-    //             })
-    //             .author()
-    //     },
+  },
+  Mutation: {
+    signup: async (parent, { email, password }, { prisma, res }) => {
+      res.clearCookie('token')
+      const hashedPassword = await hash(password, 10)
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          profile: { create: {} },
+          dailyProfile: { create: {} },
+        },
+      })
+      return {
+        token: sign({ userId: user.id }, APP_SECRET),
+        user,
+      }
+    },
+    login: async (parent, { email, password }, { prisma, res }) => {
+      const user = await prisma.user.findOne({
+        where: { email },
+      })
+      if (!user)
+        throw new Error('Could not find a match for username and password')
+
+      const valid = await compare(password, user.password)
+      if (!valid)
+        throw new Error('Could not find a match for username and password')
+
+      const token = sign({ userId: user.id }, APP_SECRET)
+      res.cookie('token', `Bearer ${token}`, {
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24,
+        // secure: true,  // https only
+      })
+      return { token, user }
+    },
+    logout: (parent, { email, password }, { prisma, res }) => {
+      res.clearCookie('token')
+      return true
+    },
+    fetchPage: (parent, { link }, { prisma, req }) => {
+      // grpc call to nlp-app
+      // return prisma.comment.create({ userId: req.userId, ...data })
+      return null
+    },
+    createPost: (parent, { data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    updatePost: (parent, { id, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    createPostLike: (parent, { postId, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    updatePostLike: (parent, { postId, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    createPostVote: (parent, { postId, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    updatePostVote: (parent, { postId, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    createComment: (parent, { data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    updateComment: (parent, { id, data }, { prisma, req }) => {
+      return prisma.comment.update({
+        where: { id: Number(id) },
+        data,
+      })
+    },
+    createCommentLike: (parent, { postId, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    updateCommentLike: (parent, { postId, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    createCommit: (parent, { data }, { prisma, req }) => {
+      // invite random reviewers by creating commitReview
+
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    updateCommit: (parent, { id, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    updateCommitReview: (parent, { id, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    applyCommitReview: (parent, { id, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    createFollow: (parent, { symbolId, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    updateFollow: (parent, { symbolId, data }, { prisma, req }) => {
+      return prisma.comment.create({ userId: req.userId, ...data })
+    },
+    // upsertEventTrack: (parent, { id, eventId, isTracked }, { prisma, req }) => {
+    //     const data = { userId: req.userId, eventId, isTracked }
+    //     if (id == null) {
+    //         return prisma.eventTrack.create({ data })
+    //     } else {
+    //         return prisma.eventTrack.update({
+    //             where: { id: Number(id) },
+    //             data,
+    //         })
+    //     }
     // },
+
+    // myLikes: (parent, args, { prisma, req }) => {
+    //     const userId = req.userId
+    //     return prisma.like.findMany({
+    //         where: { userId: Number(userId) },
+    //         first: 100,
+    //     })
+    // },
+
+    // createDraft: (parent, args, ctx) => {
+    //     return ctx.prisma.post.create({
+    //         data: {
+    //             title: args.title,
+    //             content: args.content,
+    //             published: false,
+    //             author: {
+    //                 connect: { email: args.authorEmail },
+    //             },
+    //         },
+    //     })
+    // },
+    // deleteOnePost: (parent, args, ctx: Context) => {
+    //     return ctx.prisma.post.delete({
+    //         where: { id: Number(args.where.id) },
+    //     })
+    // },
+    // publish: (parent, args, ctx: Context) => {
+    //     return ctx.prisma.post.update({
+    //         where: { id: Number(args.id) },
+    //         data: { published: true },
+    //     })
+    // },
+  },
 }

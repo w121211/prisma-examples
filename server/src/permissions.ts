@@ -66,8 +66,9 @@ export const permissions = shield({
     // deletePost: rules.isPostOwner,
     // publish: rules.isPostOwner,
     // createLike: rules.isAuthenticated,
-    createLike: rules.isAuthenticated,
-    updateLike: rules.isLikeOwner,
+    // createLike: rules.isAuthenticated,
+    // updateLike: rules.isLikeOwner,
+    // updateLike: allow,
   },
 }, {
   allowExternalErrors: true
